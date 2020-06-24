@@ -1,4 +1,4 @@
-# apt install python-pip
+# install python-pip
 # pip install selenium
 # pip install requests
 # pip install chromedriver-autoinstaller
@@ -44,6 +44,10 @@ limitDate = datetime.date(today.year, today.month, today.day - int(sys.argv[1]))
 # waitLoginTime = 20 # Seconds
 
 # CONTORNAR ERRO DE SERVICO 500
+# Mudar nome da funcao que gera o playlist.json para generatePlaylistsJSON
+# Fazer funcoes mais pequenas, para fracionar mais, como por exemplo uma para pegar generos da musica
+# Fazer a funcao que pega os generos e liga a playlists
+# Fazer a funcao que adiciona nas playlists
 
 """
 face <a ng-href="https://www.facebook.com/
@@ -77,32 +81,57 @@ def getSpotifyToken():
     
     return token
 
-def getTodayLikedMusics(token):
-    url = "https://api.spotify.com/v1/me/tracks?offset=0&limit=50"
-    
-    r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-    
-    data = r.json()
-    r.close()
-    
-    if r.status_code != 200:
-        print('An error ocurred trying to get today liked musics.\nError: {}'.format(data['error']))
-        return None
-    
-    for music in data['items']:
-        date_parts = str(music['added_at']).split('-')
-        day = int(date_parts[2].split('T')[0])
-        month = int(date_parts[1])
-        year = int(date_parts[0])
+def getLikedMusics(token):
+    def LikedMusicsInRange(url, count, bar):
+        r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
+        data = r.json()
+        r.close()
         
-        music_date = datetime.date(year, month, day)
-        if music_date >= limitDate:
-            # Tratar caso de ter mais musicas
-            # Fazer tratamento para vibes usando get-audio-features/
-            genres = getArtistGenres(token, music['track']['artists'][0]['id'])
+        if r.status_code != 200:
+            print('An error ocurred trying to get liked musics.\nError: {}\nURL: {}' \
+                .format(data['error'], url))
+            return None, count
+        
+        total = data['total']
+        plus_percentage = total/100
+        
+        for music in data['items']:
+            date_parts = str(music['added_at']).split('-')
+            day = int(date_parts[2].split('T')[0])
+            month = int(date_parts[1])
+            year = int(date_parts[0])
             
-            print("Genres = {}".format(genres))
-            
+            music_date = datetime.date(year, month, day)
+            if music_date >= limitDate:
+                # Fazer tratamento para vibes usando get-audio-features/
+                music_genres = []
+                for artist in music['track']['artists']:
+                    if artist['id'] is not None:
+                        genres = getArtistGenres(token, str(artist['id']))
+                        for genre in genres:
+                            if (genre is not None) and (str(genre) not in music_genres):
+                                music_genres.append(str(genre))
+                
+                # Procurar no json os generos e adicionar nas playlists (bolar um algoritmo)
+                count += plus_percentage
+                try:
+                    bar.update(count)
+                except ValueError:
+                    bar.update(100)
+        
+        return data['next'], count
+    
+    print("Collecting recently saved musics and adding to playlists... Please, wait.")
+    bar = progressbar.ProgressBar(maxval=100, \
+        widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+    bar.start()
+    
+    next_field, count = LikedMusicsInRange("https://api.spotify.com/v1/me/tracks?offset=0&limit=50", 0, bar)
+    while next_field is not None:
+        next_field, count = LikedMusicsInRange(next_field, count, bar)
+    
+    bar.finish()
+        
 def getArtistGenres(token, artistID):
     url = "https://api.spotify.com/v1/artists/{}".format(artistID)
     
@@ -118,7 +147,7 @@ def getArtistGenres(token, artistID):
     
     return data['genres']
 
-def getUserPlaylists(token, name):
+def getUserPlaylistsGenres(token, name):
     playlists_data = {}
     playlists_data['playlists'] = []
     # Checar qual playlist falta verificar para fazer update das faltantes ou das musicas faltantes
@@ -160,14 +189,14 @@ def getUserPlaylists(token, name):
         return data['next'], count
     
     if (not path.exists("playlists.json")) or updatePlaylistsJSON:
-        print("Updating playlists.json file...")
+        print("Updating playlists.json file and analyzing your playlists genres... Please, wait.")
         bar = progressbar.ProgressBar(maxval=100, \
             widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
         
-        next, count = getPlaylistInRange("https://api.spotify.com/v1/me/playlists?limit=50&offset=0", 0, bar)
-        while next is not None:
-            next, count = getPlaylistInRange(next, count, bar)
+        next_field, count = getPlaylistInRange("https://api.spotify.com/v1/me/playlists?limit=50&offset=0", 0, bar)
+        while next_field is not None:
+            next_field, count = getPlaylistInRange(next_field, count, bar)
         
         bar.finish()
         
@@ -176,7 +205,8 @@ def getUserPlaylists(token, name):
 
         
 def getPlaylistGenres(token, playlistId):
-    url = "https://api.spotify.com/v1/playlists/{}/tracks?fields=items(track(artists(id)))".format(playlistId)
+    url = "https://api.spotify.com/v1/playlists/{}/tracks?fields=items(track(artists(id)))&limit=100" \
+        .format(playlistId)
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
     
     data = r.json()
@@ -192,14 +222,14 @@ def getPlaylistGenres(token, playlistId):
     
     for track in data['items']:
         for artist in track['track']['artists']:
-            if (str(artist['id']) is not None) and (str(artist['id']) not in artists):
+            if (artist['id'] is not None) and (str(artist['id']) not in artists):
                 artists.append(str(artist['id']))
     
     for artist in artists:
         genres_artist = getArtistGenres(token, artist)
         if genres_artist is not None:
             for genre in genres_artist:
-                if (str(genre) is not None) and (str(genre) not in genres):
+                if (genre is not None) and (str(genre) not in genres):
                     genres.append(str(genre))
                 
     return genres
@@ -226,8 +256,8 @@ def main():
         # print(token)
         name = getUserName(token)
         if name != None:
-            getUserPlaylists(token, name)
-            # getTodayLikedMusics(token)
+            getUserPlaylistsGenres(token, name)
+            # getLikedMusics(token)
     
 
 if __name__ == "__main__":
