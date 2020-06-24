@@ -2,6 +2,7 @@
 # pip install selenium
 # pip install requests
 # pip install chromedriver-autoinstaller
+# pip install progressbar
 
 import base64
 import webbrowser
@@ -9,6 +10,7 @@ import time
 import datetime
 import sys
 import json
+import progressbar
 import requests as req
 import chromedriver_autoinstaller
 from os import path
@@ -40,6 +42,8 @@ updatePlaylistsJSON = False
 limitDate = datetime.date(today.year, today.month, today.day - int(sys.argv[1]))
 
 # waitLoginTime = 20 # Seconds
+
+# CONTORNAR ERRO DE SERVICO 500
 
 """
 face <a ng-href="https://www.facebook.com/
@@ -108,57 +112,67 @@ def getArtistGenres(token, artistID):
     r.close()
     
     if r.status_code != 200:
-        print('An error ocurred trying to get the Artist of a music.\nError: {}'.format(data['error']))
+        print('An error ocurred trying to get the Artist of a music.\nError: {}\nArtistID: {}' \
+            .format(data['error'], artistID))
         return None
     
     return data['genres']
 
 def getUserPlaylists(token, name):
-    if (not path.exists("playlists.json")) or updatePlaylistsJSON:
-        url = "https://api.spotify.com/v1/me/playlists?limit=50&offset=0"
+    playlists_data = {}
+    playlists_data['playlists'] = []
+    # Checar qual playlist falta verificar para fazer update das faltantes ou das musicas faltantes
+    # Melhorar performance da funcao, pegando talvez menos musicas de cada playlist para tirar base?
+    # Incluir campo de genero mais destacado da playlist?
+    
+    def getPlaylistInRange(url, count, bar):
         r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
         
         data = r.json()
         r.close()
     
         if r.status_code != 200:
-            print('An error ocurred trying to get the user playlists.\nError: {}'.format(data['error']))
-            return None
+            print('An error ocurred trying to get the user playlists.\nError: {}\nURL: {}' \
+                .format(data['error'], url))
+            return None, count
         
-        # Tratar caso de ter mais playlists
-        jsonfile = open(file="playlists.json", mode="w", encoding="utf-8")
-        
-        playlists_data = {}
-        playlists_data['playlists'] = []
+        total = data['total']
+        plus_percentage = total/100
         
         playlists = data['items']
         for playlist in playlists:
             if playlist['owner']['display_name'] == name:
+                # sys.stderr.write("Playlist: {}".format(playlist['name']) + '\r')
+                # sys.stderr.flush()
+                # Fazer o print da playlist atual também
+                # Arrumar o problema do Artista None
                 playlists_data['playlists'].append({
-                    'name': playlist['name'],
-                    'id': playlist['id'],
-                    'genres': getPlaylistGenres(token, playlist['id'])
+                    'name': str(playlist['name']),
+                    'id': str(playlist['id']),
+                    'genres': getPlaylistGenres(token, str(playlist['id']))
                 })
+            count += plus_percentage
+            try:
+                bar.update(count)
+            except ValueError:
+                bar.update(100)
         
-        while data['next'] != "null":
-            url = data['next']
-            r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-            data = r.json()
-            r.close()
-            if r.status_code != 200:
-                print('An error ocurred trying to get the user playlists.\nError: {}'.format(data['error']))
-                return None
-            
-            playlists = data['items']
-            for playlist in playlists:
-                if playlist['owner']['display_name'] == name:
-                    playlists_data['playlists'].append({
-                        'name': playlist['name'],
-                        'id': playlist['id'],
-                        'genres': getPlaylistGenres(token, playlist['id'])
-                    })
+        return data['next'], count
+    
+    if (not path.exists("playlists.json")) or updatePlaylistsJSON:
+        print("Updating playlists.json file...")
+        bar = progressbar.ProgressBar(maxval=100, \
+            widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
+        bar.start()
         
-        json.dump(playlists_data, jsonfile)
+        next, count = getPlaylistInRange("https://api.spotify.com/v1/me/playlists?limit=50&offset=0", 0, bar)
+        while next is not None:
+            next, count = getPlaylistInRange(next, count, bar)
+        
+        bar.finish()
+        
+        with open(file='playlists.json', mode='w', encoding='utf8') as json_file:
+            json.dump(playlists_data, json_file, ensure_ascii=False, indent=4)
 
         
 def getPlaylistGenres(token, playlistId):
@@ -169,7 +183,8 @@ def getPlaylistGenres(token, playlistId):
     r.close()
 
     if r.status_code != 200:
-        print('An error ocurred trying to get tracks of one playlist.\nError: {}'.format(data['error']))
+        print('An error ocurred trying to get tracks of one playlist.\nError: {}\nPlaylistID: {}' \
+            .format(data['error'], playlistId))
         return ''
     
     artists = []
@@ -177,15 +192,15 @@ def getPlaylistGenres(token, playlistId):
     
     for track in data['items']:
         for artist in track['track']['artists']:
-            if artist['id'] not in artists:
-                artists.append(artist['id'])
+            if (str(artist['id']) is not None) and (str(artist['id']) not in artists):
+                artists.append(str(artist['id']))
     
     for artist in artists:
         genres_artist = getArtistGenres(token, artist)
         if genres_artist is not None:
             for genre in genres_artist:
-                if genre not in genres:
-                    genres.append(genre)
+                if (str(genre) is not None) and (str(genre) not in genres):
+                    genres.append(str(genre))
                 
     return genres
     
@@ -200,7 +215,7 @@ def getUserName(token):
         print('An error ocurred trying to get the user info.\nError: {}'.format(data['error']))
         return None
     
-    return data['display_name']
+    return str(data['display_name'])
 
 def getTokenFromURL(url):
     return str(url).split('#')[1].split('&')[0].split('=')[1]
