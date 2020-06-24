@@ -59,7 +59,8 @@ email <input ng-model="form.username"
 def getSpotifyToken():
     url = "https://accounts.spotify.com/authorize?client_id={}&response_type=token&redirect_uri={}" \
         "&scope=user-read-private playlist-read-private user-library-read " \
-        "playlist-read-collaborative".format(clientId, 'https://www.google.com.br')
+        "playlist-read-collaborative playlist-modify-public playlist-modify-private" \
+        .format(clientId, 'https://www.google.com.br')
     
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--mute-audio")
@@ -81,8 +82,8 @@ def getSpotifyToken():
     
     return token
 
-def getLikedMusics(token):
-    def LikedMusicsInRange(url, count, bar):
+def organizeLikedMusics(token):
+    def LikedMusicsInRange(url):
         r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
         data = r.json()
         r.close()
@@ -90,10 +91,7 @@ def getLikedMusics(token):
         if r.status_code != 200:
             print('An error ocurred trying to get liked musics.\nError: {}\nURL: {}' \
                 .format(data['error'], url))
-            return None, count
-        
-        total = data['total']
-        plus_percentage = total/100
+            return
         
         for music in data['items']:
             date_parts = str(music['added_at']).split('-')
@@ -102,35 +100,32 @@ def getLikedMusics(token):
             year = int(date_parts[0])
             
             music_date = datetime.date(year, month, day)
-            if music_date >= limitDate:
-                # Fazer tratamento para vibes usando get-audio-features/
-                music_genres = []
-                for artist in music['track']['artists']:
-                    if artist['id'] is not None:
-                        genres = getArtistGenres(token, str(artist['id']))
-                        for genre in genres:
-                            if (genre is not None) and (str(genre) not in music_genres):
-                                music_genres.append(str(genre))
+            if not (music_date >= limitDate):
+                return None
+
+            # Fazer tratamento para vibes usando get-audio-features/
+            music_genres = []
+            for artist in music['track']['artists']:
+                if artist['id'] is not None:
+                    genres = getArtistGenres(token, str(artist['id']))
+                    for genre in genres:
+                        if (genre is not None) and (str(genre) not in music_genres):
+                            music_genres.append(str(genre))
                 
-                # Procurar no json os generos e adicionar nas playlists (bolar um algoritmo)
-                count += plus_percentage
-                try:
-                    bar.update(count)
-                except ValueError:
-                    bar.update(100)
+                playlistsIds = classifyMusicPlaylistsByGenre(music_genres)
+                if playlistsIds is None:
+                    return None
+                
+                addMusicToPlaylists(token, str(music['track']['uri']), playlistsIds)
         
-        return data['next'], count
+        return data['next']
     
     print("Collecting recently saved musics and adding to playlists... Please, wait.")
-    bar = progressbar.ProgressBar(maxval=100, \
-        widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
-    bar.start()
     
-    next_field, count = LikedMusicsInRange("https://api.spotify.com/v1/me/tracks?offset=0&limit=50", 0, bar)
+    next_field = LikedMusicsInRange("https://api.spotify.com/v1/me/tracks?offset=0&limit=50")
     while next_field is not None:
-        next_field, count = LikedMusicsInRange(next_field, count, bar)
+        next_field = LikedMusicsInRange(next_field)
     
-    bar.finish()
         
 def getArtistGenres(token, artistID):
     url = "https://api.spotify.com/v1/artists/{}".format(artistID)
@@ -233,7 +228,23 @@ def getPlaylistGenres(token, playlistId):
                     genres.append(str(genre))
                 
     return genres
+
+def addMusicToPlaylists(token, musicUri, playlistsIds):
+    # Reduzir o numero de requests para adicionar a playlist
+    # Fazer adicionar varias musicas para a mesma playlist por vez
+    # E nao em varias playlists cada musica
+    print("Adding music {} to playlists {}".format(musicUri, playlistsIds))
+    for playlist in playlistsIds:
+        url = "https://api.spotify.com/v1/playlists/{}/tracks?uris={}".format(playlist, musicUri)
+        r = req.post(url=url, headers={'Authorization':'Bearer ' + token})
+        data = r.json()
+        r.close()
+
+        if r.status_code != 201:
+            print('An error ocurred trying to add one track in a playlist.\nError: {}\nPlaylistID: {}' \
+                "\nMusicURI: {}".format(data['error'], playlist, musicUri))
     
+
 def getUserName(token):
     url = "https://api.spotify.com/v1/me"
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
@@ -250,6 +261,37 @@ def getUserName(token):
 def getTokenFromURL(url):
     return str(url).split('#')[1].split('&')[0].split('=')[1]
 
+def classifyMusicPlaylistsByGenre(genre_list):
+    if not path.exists("playlists.json"):
+        print("You need to have a playlists.json file! Run it again with the update json parameter.")
+        return None
+    
+    selected_playlists = []
+    
+    with open("playlists.json", "r") as json_file:
+        data = json.load(json_file)
+        
+    for playlist in data['playlists']:
+        for genre in genre_list:
+            if str(genre) in playlist['genres']:
+                selected_playlists.append(str(playlist['id']))
+                break
+            
+    return selected_playlists
+
+    
+def classifyMusicPlaylistsByTotalGenres(genre_list):
+    abc = None
+    
+def classifyMusicPlaylistsByMostUsedGenre(genre_list):
+    abc = None
+    
+def classifyMusicPlaylistsByGroupGenre(genre_list):
+    abc = None
+    
+def classifyMusicPlaylistsByMetadadata(genre_list):
+    abc = None
+    
 def main():
     token = getSpotifyToken()
     if token != None:
@@ -257,7 +299,8 @@ def main():
         name = getUserName(token)
         if name != None:
             getUserPlaylistsGenres(token, name)
-            # getLikedMusics(token)
+        
+        organizeLikedMusics(token)
     
 
 if __name__ == "__main__":
