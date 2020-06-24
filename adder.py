@@ -1,4 +1,4 @@
-# install python-pip
+# install python-pip (this is just to get pip install command working)
 # pip install selenium
 # pip install requests
 # pip install chromedriver-autoinstaller
@@ -48,6 +48,12 @@ limitDate = datetime.date(today.year, today.month, today.day - int(sys.argv[1]))
 # Fazer funcoes mais pequenas, para fracionar mais, como por exemplo uma para pegar generos da musica
 # Fazer a funcao que pega os generos e liga a playlists
 # Fazer a funcao que adiciona nas playlists
+# Fazer cada playlist ter os seus generos mais compativeis, os tops, os que mais bateram
+# Fazer o selecionamento das playlists por metadados
+# Fazer o selecionamento das playlists por top genre
+# Fazer uma maneira mais facil de editar o json
+# Fazer parametro para varredura de playlists com apenas playlists selecionadas. Poupar tempo e custo
+
 
 """
 face <a ng-href="https://www.facebook.com/
@@ -169,7 +175,6 @@ def getUserPlaylistsGenres(token, name):
                 # sys.stderr.write("Playlist: {}".format(playlist['name']) + '\r')
                 # sys.stderr.flush()
                 # Fazer o print da playlist atual também
-                # Arrumar o problema do Artista None
                 playlists_data['playlists'].append({
                     'name': str(playlist['name']),
                     'id': str(playlist['id']),
