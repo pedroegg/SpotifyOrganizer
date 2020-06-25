@@ -118,7 +118,7 @@ def organizeLikedMusics(token):
                         if (genre is not None) and (str(genre) not in music_genres):
                             music_genres.append(str(genre))
                 
-                playlistsIds = classifyMusicPlaylistsByGenre(music_genres)
+                playlistsIds = classifyMusicPlaylistsByTop3Genre(music_genres)
                 if playlistsIds is None:
                     return None
                 
@@ -175,11 +175,14 @@ def getUserPlaylistsGenres(token, name):
                 # sys.stderr.write("Playlist: {}".format(playlist['name']) + '\r')
                 # sys.stderr.flush()
                 # Fazer o print da playlist atual também
+                genres, top3genres = getPlaylistGenres(token, str(playlist['id']))
                 playlists_data['playlists'].append({
                     'name': str(playlist['name']),
                     'id': str(playlist['id']),
-                    'genres': getPlaylistGenres(token, str(playlist['id']))
+                    'genres': genres,
+                    'topGenres': top3genres
                 })
+                
             count += plus_percentage
             try:
                 bar.update(count)
@@ -205,7 +208,7 @@ def getUserPlaylistsGenres(token, name):
 
         
 def getPlaylistGenres(token, playlistId):
-    url = "https://api.spotify.com/v1/playlists/{}/tracks?fields=items(track(artists(id)))&limit=100" \
+    url = "https://api.spotify.com/v1/playlists/{}/tracks?fields=items(track(artists(id)))&limit=50" \
         .format(playlistId)
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
     
@@ -219,6 +222,7 @@ def getPlaylistGenres(token, playlistId):
     
     artists = []
     genres = []
+    count_genres = {}
     
     for track in data['items']:
         for artist in track['track']['artists']:
@@ -229,10 +233,16 @@ def getPlaylistGenres(token, playlistId):
         genres_artist = getArtistGenres(token, artist)
         if genres_artist is not None:
             for genre in genres_artist:
-                if (genre is not None) and (str(genre) not in genres):
-                    genres.append(str(genre))
-                
-    return genres
+                if (genre is not None):
+                    if str(genre) not in genres:
+                        genres.append(str(genre))
+                    if str(genre) in count_genres:
+                        count_genres[str(genre)] += 1
+                    else:
+                        count_genres[str(genre)] = 1
+    
+    top_genres = sorted(count_genres, key=count_genres.get, reverse=True)[:3]
+    return genres, top_genres
 
 def addMusicToPlaylists(token, musicUri, playlistsIds):
     # Reduzir o numero de requests para adicionar a playlist
@@ -288,8 +298,23 @@ def classifyMusicPlaylistsByGenre(genre_list):
 def classifyMusicPlaylistsByTotalGenres(genre_list):
     abc = None
     
-def classifyMusicPlaylistsByMostUsedGenre(genre_list):
-    abc = None
+def classifyMusicPlaylistsByTop3Genre(genre_list):
+    if not path.exists("playlists.json"):
+        print("You need to have a playlists.json file! Run it again with the update json parameter.")
+        return None
+    
+    selected_playlists = []
+    
+    with open("playlists.json", "r") as json_file:
+        data = json.load(json_file)
+        
+    for playlist in data['playlists']:
+        for genre in genre_list:
+            if str(genre) in playlist['topGenres']:
+                selected_playlists.append(str(playlist['id']))
+                break
+            
+    return selected_playlists
     
 def classifyMusicPlaylistsByGroupGenre(genre_list):
     abc = None
@@ -300,12 +325,12 @@ def classifyMusicPlaylistsByMetadadata(genre_list):
 def main():
     token = getSpotifyToken()
     if token != None:
-        # print(token)
-        name = getUserName(token)
-        if name != None:
-            getUserPlaylistsGenres(token, name)
+        print(token)
+        # name = getUserName(token)
+        # if name != None:
+            # getUserPlaylistsGenres(token, name)
         
-        organizeLikedMusics(token)
+        # organizeLikedMusics(token)
     
 
 if __name__ == "__main__":
