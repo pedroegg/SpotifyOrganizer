@@ -67,11 +67,12 @@ def getSpotifyToken():
         "&scope=user-read-private playlist-read-private user-library-read " \
         "playlist-read-collaborative playlist-modify-public playlist-modify-private" \
         .format(clientId, 'https://www.google.com.br')
+        
+    chromedriver_autoinstaller.install()
     
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--mute-audio")
     chrome_options.add_argument('--no-sandbox')
-    chromedriver_autoinstaller.install()
     driver = webdriver.Chrome(options=chrome_options)
     driver.get(url)
     
@@ -123,6 +124,7 @@ def organizeLikedMusics(token):
                     return None
                 
                 addMusicToPlaylists(token, str(music['track']['uri']), playlistsIds)
+                music_genres = []
         
         return data['next']
     
@@ -323,14 +325,15 @@ def classifyMusicPlaylistsByMetadadata(genre_list):
     abc = None
     
 def main():
+    chromedriver_autoinstaller.install()
     token = getSpotifyToken()
     if token != None:
-        print(token)
-        # name = getUserName(token)
-        # if name != None:
-            # getUserPlaylistsGenres(token, name)
+        # print(token)
+        name = getUserName(token)
+        if name != None:
+            getUserPlaylistsGenres(token, name)
         
-        # organizeLikedMusics(token)
+        organizeLikedMusics(token)
     
 
 if __name__ == "__main__":
