@@ -119,12 +119,12 @@ def organizeLikedMusics(token):
                         if (genre is not None) and (str(genre) not in music_genres):
                             music_genres.append(str(genre))
                 
-                playlistsIds = classifyMusicPlaylistsByTop3Genre(music_genres)
-                if playlistsIds is None:
-                    return None
-                
-                addMusicToPlaylists(token, str(music['track']['uri']), playlistsIds)
-                music_genres = []
+            playlistsIds = classifyMusicPlaylistsByTop3Genre(music_genres)
+            if playlistsIds is None:
+                return None
+            
+            addMusicToPlaylists(token, str(music['track']['uri']), playlistsIds)
+            music_genres = []
         
         return data['next']
     
