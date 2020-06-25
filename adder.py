@@ -119,13 +119,13 @@ def organizeLikedMusics(token):
                         if (genre is not None) and (str(genre) not in music_genres):
                             music_genres.append(str(genre))
                 
-            playlistsIds = classifyMusicPlaylistsByTop3Genre(music_genres)
-            if playlistsIds is None:
+            playlists = classifyMusicPlaylistsByTop3Genre(music_genres)
+            if playlists is None:
                 return None
             
-            addMusicToPlaylists(token, str(music['track']['uri']), playlistsIds)
+            addMusicToPlaylists(token, music['track'], music_genres, playlists)
             music_genres = []
-        
+            
         return data['next']
     
     print("Collecting recently saved musics and adding to playlists... Please, wait.")
@@ -246,20 +246,24 @@ def getPlaylistGenres(token, playlistId):
     top_genres = sorted(count_genres, key=count_genres.get, reverse=True)[:3]
     return genres, top_genres
 
-def addMusicToPlaylists(token, musicUri, playlistsIds):
+def addMusicToPlaylists(token, music, music_genres, playlists):
     # Reduzir o numero de requests para adicionar a playlist
     # Fazer adicionar varias musicas para a mesma playlist por vez
     # E nao em varias playlists cada musica
-    print("Adding music {} to playlists {}".format(musicUri, playlistsIds))
-    for playlist in playlistsIds:
-        url = "https://api.spotify.com/v1/playlists/{}/tracks?uris={}".format(playlist, musicUri)
+    for playlist in playlists['playlists']:
+        url = "https://api.spotify.com/v1/playlists/{}/tracks?uris={}".format(playlist['id'], music['uri'])
+        
+        print("Music {} {} matched with {} {} in genre {}" \
+                    .format(music['name'], music_genres, playlist['name'], \
+                        playlist['topGenres'], playlist['matchedGenre']), end='\n\n')
+        
         r = req.post(url=url, headers={'Authorization':'Bearer ' + token})
         data = r.json()
         r.close()
 
         if r.status_code != 201:
             print('An error ocurred trying to add one track in a playlist.\nError: {}\nPlaylistID: {}' \
-                "\nMusicURI: {}".format(data['error'], playlist, musicUri))
+                "\nMusic: {}".format(data['error'], playlist['id'], music['name']))
     
 
 def getUserName(token):
@@ -283,15 +287,21 @@ def classifyMusicPlaylistsByGenre(genre_list):
         print("You need to have a playlists.json file! Run it again with the update json parameter.")
         return None
     
-    selected_playlists = []
+    selected_playlists = {}
+    selected_playlists['playlists'] = []
     
     with open("playlists.json", "r") as json_file:
         data = json.load(json_file)
         
     for playlist in data['playlists']:
-        for genre in genre_list:
-            if str(genre) in playlist['genres']:
-                selected_playlists.append(str(playlist['id']))
+        for top_genre in playlist['topGenres']:
+            if str(top_genre) in genre_list:
+                selected_playlists['playlists'].append({
+                    'id': playlist['id'],
+                    'name': playlist['name'],
+                    'genres': playlist['genres'],
+                    'matchedGenre': str(top_genre)
+                })
                 break
             
     return selected_playlists
@@ -305,15 +315,21 @@ def classifyMusicPlaylistsByTop3Genre(genre_list):
         print("You need to have a playlists.json file! Run it again with the update json parameter.")
         return None
     
-    selected_playlists = []
+    selected_playlists = {}
+    selected_playlists['playlists'] = []
     
     with open("playlists.json", "r") as json_file:
         data = json.load(json_file)
         
-    for playlist in data['playlists']:
-        for genre in genre_list:
-            if str(genre) in playlist['topGenres']:
-                selected_playlists.append(str(playlist['id']))
+    for playlist in data['playlists']:  
+        for top_genre in playlist['topGenres']:
+            if str(top_genre) in genre_list:
+                selected_playlists['playlists'].append({
+                    'id': playlist['id'],
+                    'name': playlist['name'],
+                    'topGenres': playlist['topGenres'],
+                    'matchedGenre': str(top_genre)
+                })
                 break
             
     return selected_playlists
