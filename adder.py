@@ -10,7 +10,9 @@ import time
 import datetime
 import sys
 import json
+import csv
 import progressbar
+import statistics
 import requests as req
 import chromedriver_autoinstaller
 from os import path
@@ -177,12 +179,14 @@ def getUserPlaylistsGenres(token, name):
                 # sys.stderr.write("Playlist: {}".format(playlist['name']) + '\r')
                 # sys.stderr.flush()
                 # Fazer o print da playlist atual também
-                genres, top3genres = getPlaylistGenres(token, str(playlist['id']))
+                genres, top3genres, metadatas = getPlaylistGenres(token, str(playlist['id']))
+                median_metadata = getMetadataMedia(metadatas)
                 playlists_data['playlists'].append({
                     'name': str(playlist['name']),
                     'id': str(playlist['id']),
                     'genres': genres,
-                    'topGenres': top3genres
+                    'topGenres': top3genres,
+                    'metadata': median_metadata
                 })
                 
             count += plus_percentage
@@ -210,7 +214,7 @@ def getUserPlaylistsGenres(token, name):
 
         
 def getPlaylistGenres(token, playlistId):
-    url = "https://api.spotify.com/v1/playlists/{}/tracks?fields=items(track(artists(id)))&limit=50" \
+    url = "https://api.spotify.com/v1/playlists/{}/tracks?fields=items(track(id,artists(id)))&limit=50" \
         .format(playlistId)
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
     
@@ -225,8 +229,11 @@ def getPlaylistGenres(token, playlistId):
     artists = []
     genres = []
     count_genres = {}
+    metadatas = createMetadataStructure()
     
     for track in data['items']:
+        current_metadata = getTrackMetaData(token, track['track']['id'])
+        metadatas = mapMetadataValues(metadatas, current_metadata)
         for artist in track['track']['artists']:
             if (artist['id'] is not None) and (str(artist['id']) not in artists):
                 artists.append(str(artist['id']))
@@ -244,12 +251,13 @@ def getPlaylistGenres(token, playlistId):
                         count_genres[str(genre)] = 1
     
     top_genres = sorted(count_genres, key=count_genres.get, reverse=True)[:3]
-    return genres, top_genres
+    return genres, top_genres, metadatas
 
 def addMusicToPlaylists(token, music, music_genres, playlists):
     # Reduzir o numero de requests para adicionar a playlist
     # Fazer adicionar varias musicas para a mesma playlist por vez
     # E nao em varias playlists cada musica
+    # VERIFICAR E ARRUMAR DUPLICATA
     for playlist in playlists['playlists']:
         url = "https://api.spotify.com/v1/playlists/{}/tracks?uris={}".format(playlist['id'], music['uri'])
         
@@ -340,8 +348,67 @@ def classifyMusicPlaylistsByGroupGenre(genre_list):
 def classifyMusicPlaylistsByMetadadata(genre_list):
     abc = None
     
+def getTrackMetaData(token, track_id):
+    url = "https://api.spotify.com/v1/audio-features/{}".format(str(track_id))
+    r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
+    data = r.json()
+    r.close()
+
+    if r.status_code != 200:
+        print('An error ocurred trying to get the metadata of a song.\nError: {}\nTrackID: {}' \
+            .format(data['error'], track_id))
+        return None
+    
+    return data
+
+def getMetadataMedia(metadatas):
+    metadata = {}
+    metadata['danceability'] = statistics.median(metadatas['danceability'])
+    metadata['energy'] = statistics.median(metadatas['energy'])
+    metadata['key'] = statistics.median(metadatas['key'])
+    metadata['loudness'] = statistics.median(metadatas['loudness'])
+    metadata['mode'] = statistics.median(metadatas['mode'])
+    metadata['speechiness'] = statistics.median(metadatas['speechiness'])
+    metadata['acousticness'] = statistics.median(metadatas['acousticness'])
+    metadata['instrumentalness'] = statistics.median(metadatas['instrumentalness'])
+    metadata['liveness'] = statistics.median(metadatas['liveness'])
+    metadata['valence'] = statistics.median(metadatas['valence'])
+    metadata['tempo'] = statistics.median(metadatas['tempo'])
+    metadata['duration_ms'] = statistics.median(metadatas['duration_ms'])
+    return metadata
+
+def createMetadataStructure():
+    metadatas = {}
+    metadatas['danceability'] = []
+    metadatas['energy'] = []
+    metadatas['key'] = []
+    metadatas['loudness'] = []
+    metadatas['mode'] = []
+    metadatas['speechiness'] = []
+    metadatas['acousticness'] = []
+    metadatas['instrumentalness'] = []
+    metadatas['liveness'] = []
+    metadatas['valence'] = []
+    metadatas['tempo'] = []
+    metadatas['duration_ms'] = []
+    return metadatas
+
+def mapMetadataValues(metadatas, current_metadata):
+    metadatas['danceability'].append(current_metadata['danceability'])
+    metadatas['energy'].append(current_metadata['energy'])
+    metadatas['key'].append(current_metadata['key'])
+    metadatas['loudness'].append(current_metadata['loudness'])
+    metadatas['mode'].append(current_metadata['mode'])
+    metadatas['speechiness'].append(current_metadata['speechiness'])
+    metadatas['acousticness'].append(current_metadata['acousticness'])
+    metadatas['instrumentalness'].append(current_metadata['instrumentalness'])
+    metadatas['liveness'].append(current_metadata['liveness'])
+    metadatas['valence'].append(current_metadata['valence'])
+    metadatas['tempo'].append(current_metadata['tempo'])
+    metadatas['duration_ms'].append(current_metadata['duration_ms'])
+    return metadatas
+    
 def main():
-    chromedriver_autoinstaller.install()
     token = getSpotifyToken()
     if token != None:
         # print(token)
@@ -349,8 +416,7 @@ def main():
         if name != None:
             getUserPlaylistsGenres(token, name)
         
-        organizeLikedMusics(token)
+        # organizeLikedMusics(token)
     
-
 if __name__ == "__main__":
     main()
