@@ -69,8 +69,6 @@ def getSpotifyToken():
         "&scope=user-read-private playlist-read-private user-library-read " \
         "playlist-read-collaborative playlist-modify-public playlist-modify-private" \
         .format(clientId, 'https://www.google.com.br')
-        
-    chromedriver_autoinstaller.install()
     
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--mute-audio")
@@ -180,13 +178,13 @@ def getUserPlaylistsGenres(token, name):
                 # sys.stderr.flush()
                 # Fazer o print da playlist atual também
                 genres, top3genres, metadatas = getPlaylistGenres(token, str(playlist['id']))
-                median_metadata = getMetadataMedia(metadatas)
+                dp_metadata = getMetadataDP(metadatas)
                 playlists_data['playlists'].append({
                     'name': str(playlist['name']),
                     'id': str(playlist['id']),
                     'genres': genres,
                     'topGenres': top3genres,
-                    'metadata': median_metadata
+                    'metadata': dp_metadata
                 })
                 
             count += plus_percentage
@@ -229,11 +227,12 @@ def getPlaylistGenres(token, playlistId):
     artists = []
     genres = []
     count_genres = {}
-    metadatas = createMetadataStructure()
+    metadatas = createMetadataDPStructure()
     
     for track in data['items']:
-        current_metadata = getTrackMetaData(token, track['track']['id'])
-        metadatas = mapMetadataValues(metadatas, current_metadata)
+        if track['track']['id'] is not None and str(track['track']['id']) != "":
+            current_metadata = getTrackMetaData(token, track['track']['id'])
+            metadatas = mapMetadataDPValues(metadatas, current_metadata)
         for artist in track['track']['artists']:
             if (artist['id'] is not None) and (str(artist['id']) not in artists):
                 artists.append(str(artist['id']))
@@ -359,29 +358,64 @@ def getTrackMetaData(token, track_id):
             .format(data['error'], track_id))
         return None
     
+    data['danceability'] = float("{:.3f}".format(data['danceability']))
+    data['energy'] = float("{:.3f}".format(data['energy']))
+    data['loudness'] = float("{:.3f}".format(data['loudness']))
+    data['speechiness'] = float("{:.3f}".format(data['speechiness']))
+    data['acousticness'] = float("{:.3f}".format(data['acousticness']))
+    data['instrumentalness'] = float("{:.3f}".format(data['instrumentalness']))
+    data['liveness'] = float("{:.3f}".format(data['liveness']))
+    data['valence'] = float("{:.3f}".format(data['valence']))
+    data['tempo'] = float("{:.3f}".format(data['tempo']))
+    data['duration_ms'] = float("{:.3f}".format(data['duration_ms']))
+    
     return data
 
 def getMetadataMedia(metadatas):
+    if metadatas['danceability'] is None or len(metadatas['danceability']) == 0:
+        return metadatas
+    
+    # Fazer sistema de rankeamento, pegar o TIPO da musica
+    # Desvio Padrão
+    
     metadata = {}
-    metadata['danceability'] = statistics.median(metadatas['danceability'])
-    metadata['energy'] = statistics.median(metadatas['energy'])
-    metadata['key'] = statistics.median(metadatas['key'])
-    metadata['loudness'] = statistics.median(metadatas['loudness'])
-    metadata['mode'] = statistics.median(metadatas['mode'])
-    metadata['speechiness'] = statistics.median(metadatas['speechiness'])
-    metadata['acousticness'] = statistics.median(metadatas['acousticness'])
-    metadata['instrumentalness'] = statistics.median(metadatas['instrumentalness'])
-    metadata['liveness'] = statistics.median(metadatas['liveness'])
-    metadata['valence'] = statistics.median(metadatas['valence'])
-    metadata['tempo'] = statistics.median(metadatas['tempo'])
-    metadata['duration_ms'] = statistics.median(metadatas['duration_ms'])
+    metadata['danceability'] = "{:.3f}".format(statistics.fmean(metadatas['danceability']))
+    metadata['energy'] = "{:.3f}".format(statistics.fmean(metadatas['energy']))
+    metadata['loudness'] = "{:.3f}".format(statistics.fmean(metadatas['loudness']))
+    metadata['mode'] = statistics.mode(metadatas['mode'])
+    metadata['speechiness'] = "{:.3f}".format(statistics.fmean(metadatas['speechiness']))
+    metadata['acousticness'] = "{:.3f}".format(statistics.fmean(metadatas['acousticness']))
+    metadata['instrumentalness'] = "{:.3f}".format(statistics.fmean(metadatas['instrumentalness']))
+    metadata['liveness'] = "{:.3f}".format(statistics.fmean(metadatas['liveness']))
+    metadata['valence'] = "{:.3f}".format(statistics.fmean(metadatas['valence']))
+    metadata['tempo'] = "{:.3f}".format(statistics.fmean(metadatas['tempo']))
+    metadata['duration_ms'] = "{:.3f}".format(statistics.fmean(metadatas['duration_ms']))
     return metadata
+
+def getMetadataDP(metadatas):
+    if metadatas['danceability'] is None or len(metadatas['danceability']) == 0:
+        return metadatas
+    
+    # Fazer sistema de rankeamento, pegar o TIPO da musica
+    # Desvio Padrão
+    
+    metadatas['danceability']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['danceability']['data']))
+    metadatas['energy']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['energy']['data']))
+    metadatas['loudness']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['loudness']['data']))
+    metadatas['mode']['dp'] = statistics.pstdev(metadatas['mode']['data'])
+    metadatas['speechiness']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['speechiness']['data']))
+    metadatas['acousticness']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['acousticness']['data']))
+    metadatas['instrumentalness']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['instrumentalness']['data']))
+    metadatas['liveness']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['liveness']['data']))
+    metadatas['valence']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['valence']['data']))
+    metadatas['tempo']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['tempo']['data']))
+    metadatas['duration_ms']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['duration_ms']['data']))
+    return metadatas
 
 def createMetadataStructure():
     metadatas = {}
     metadatas['danceability'] = []
     metadatas['energy'] = []
-    metadatas['key'] = []
     metadatas['loudness'] = []
     metadatas['mode'] = []
     metadatas['speechiness'] = []
@@ -393,10 +427,57 @@ def createMetadataStructure():
     metadatas['duration_ms'] = []
     return metadatas
 
+def createMetadataDPStructure():
+    metadatas = {}
+    metadatas['danceability'] = {}
+    metadatas['danceability']['data'] = []
+    metadatas['danceability']['dp'] = 0
+    
+    metadatas['energy'] = {}
+    metadatas['energy']['data'] = []
+    metadatas['energy']['dp'] = 0
+    
+    metadatas['loudness'] = {}
+    metadatas['loudness']['data'] = []
+    metadatas['loudness']['dp'] = 0
+    
+    metadatas['mode'] = {}
+    metadatas['mode']['data'] = []
+    metadatas['mode']['dp'] = 0
+    
+    metadatas['speechiness'] = {}
+    metadatas['speechiness']['data'] = []
+    metadatas['speechiness']['dp'] = 0
+    
+    metadatas['acousticness'] = {}
+    metadatas['acousticness']['data'] = []
+    metadatas['acousticness']['dp'] = 0
+
+    metadatas['instrumentalness'] = {}
+    metadatas['instrumentalness']['data'] = []
+    metadatas['instrumentalness']['dp'] = 0
+    
+    metadatas['liveness'] = {}
+    metadatas['liveness']['data'] = []
+    metadatas['liveness']['dp'] = 0
+    
+    metadatas['valence'] = {}
+    metadatas['valence']['data'] = []
+    metadatas['valence']['dp'] = 0
+    
+    metadatas['tempo'] = {}
+    metadatas['tempo']['data'] = []
+    metadatas['tempo']['dp'] = 0
+
+    metadatas['duration_ms'] = {}
+    metadatas['duration_ms']['data'] = []
+    metadatas['duration_ms']['dp'] = 0
+    
+    return metadatas
+
 def mapMetadataValues(metadatas, current_metadata):
     metadatas['danceability'].append(current_metadata['danceability'])
     metadatas['energy'].append(current_metadata['energy'])
-    metadatas['key'].append(current_metadata['key'])
     metadatas['loudness'].append(current_metadata['loudness'])
     metadatas['mode'].append(current_metadata['mode'])
     metadatas['speechiness'].append(current_metadata['speechiness'])
@@ -407,14 +488,62 @@ def mapMetadataValues(metadatas, current_metadata):
     metadatas['tempo'].append(current_metadata['tempo'])
     metadatas['duration_ms'].append(current_metadata['duration_ms'])
     return metadatas
+
+def mapMetadataDPValues(metadatas, current_metadata):
+    metadatas['danceability']['data'].append(current_metadata['danceability'])
+    metadatas['energy']['data'].append(current_metadata['energy'])
+    metadatas['loudness']['data'].append(current_metadata['loudness'])
+    metadatas['mode']['data'].append(current_metadata['mode'])
+    metadatas['speechiness']['data'].append(current_metadata['speechiness'])
+    metadatas['acousticness']['data'].append(current_metadata['acousticness'])
+    metadatas['instrumentalness']['data'].append(current_metadata['instrumentalness'])
+    metadatas['liveness']['data'].append(current_metadata['liveness'])
+    metadatas['valence']['data'].append(current_metadata['valence'])
+    metadatas['tempo']['data'].append(current_metadata['tempo'])
+    metadatas['duration_ms']['data'].append(current_metadata['duration_ms'])
+    return metadatas
+
+def generateCSV(token, playlistId):
+    url = "https://api.spotify.com/v1/playlists/{}/tracks?fields=items(track(id,artists(id)))&limit=50" \
+        .format(playlistId)
+    r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
+    
+    data = r.json()
+    r.close()
+
+    if r.status_code != 200:
+        print('An error ocurred trying to get tracks of one playlist.\nError: {}\nPlaylistID: {}' \
+            .format(data['error'], playlistId))
+        return ''
+    
+    structure = {}
+    structure['metadata'] = {}
+    structure['genres'] = []
+    
+    for track in data['items']:
+        if track['track']['id'] is not None and str(track['track']['id']) != "":
+            current_metadata = getTrackMetaData(token, track['track']['id'])
+            structure['metadata'] = current_metadata
+            for artist in track['track']['artists']:
+                if (artist['id'] is not None):
+                    genres_artist = getArtistGenres(token, artist['id'])
+                    for genre in genres_artist:
+                        if (genre is not None):
+                            if str(genre) not in structure['genres']:
+                                structure['genres'].append(str(genre))
+            print(structure)
+            structure['metadata'] = {}
+            structure['genres'] = []
     
 def main():
+    # chromedriver_autoinstaller.install()
     token = getSpotifyToken()
     if token != None:
         # print(token)
         name = getUserName(token)
         if name != None:
             getUserPlaylistsGenres(token, name)
+            # generateCSV(token, '4Uz5RgDqU35EIbjykAhamm')
         
         # organizeLikedMusics(token)
     
