@@ -5,7 +5,6 @@
 # pip install progressbar
 
 import base64
-import webbrowser
 import time
 import datetime
 import sys
@@ -16,26 +15,12 @@ import statistics
 import requests as req
 import chromedriver_autoinstaller
 from os import path
-from urllib.parse import urlparse
 from selenium import webdriver
-from selenium.webdriver.common.keys import Keys
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.common.action_chains import ActionChains
-
-clientId = "648f3dc76d64441abf6a5fc53fcdd843"
-
-waitLoginOption = True
-facebookOption = False
-appleOption = False
-phoneOption = False
-emailOption = False
 
 today = datetime.date.today()
 
 # Criar parametro para atualizar o json das playlists
-updatePlaylistsJSON = False
+updatePlaylistsJSON = bool(sys.argv[2])
 
 # Limit date is the date under x days from today. This date is used to get musics where date is
 # equal or greater than this date
@@ -54,40 +39,7 @@ limitDate = datetime.date(today.year, today.month, today.day - int(sys.argv[1]))
 # Fazer o selecionamento das playlists por metadados
 # Fazer o selecionamento das playlists por top genre
 # Fazer uma maneira mais facil de editar o json
-# Fazer parametro para varredura de playlists com apenas playlists selecionadas. Poupar tempo e custo
-
-
-"""
-face <a ng-href="https://www.facebook.com/
-apple <a ng-href="https://appleid.apple.com
-phone <div class="row ng-scope" ng-if="phoneBtnEnabled">
-email <input ng-model="form.username"
-"""
-
-def getSpotifyToken():
-    url = "https://accounts.spotify.com/authorize?client_id={}&response_type=token&redirect_uri={}" \
-        "&scope=user-read-private playlist-read-private user-library-read " \
-        "playlist-read-collaborative playlist-modify-public playlist-modify-private" \
-        .format(clientId, 'https://www.google.com.br')
-    
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument("--mute-audio")
-    chrome_options.add_argument('--no-sandbox')
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.get(url)
-    
-    if waitLoginOption:
-        while 'google' not in '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(driver.current_url)):
-            # Do the login...
-            time.sleep(2)
-    
-    # Tratar falha, deny do login
-    
-    token = getTokenFromURL(driver.current_url)
-    
-    driver.close()
-    
-    return token
+# Fazer parametro para varredura de playlists com apenas playlists selecionadas. Poupar tempo e cust
 
 def organizeLikedMusics(token):
     def LikedMusicsInRange(url):
@@ -133,29 +85,12 @@ def organizeLikedMusics(token):
     next_field = LikedMusicsInRange("https://api.spotify.com/v1/me/tracks?offset=0&limit=50")
     while next_field is not None:
         next_field = LikedMusicsInRange(next_field)
-    
-        
-def getArtistGenres(token, artistID):
-    url = "https://api.spotify.com/v1/artists/{}".format(artistID)
-    
-    r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-    
-    data = r.json()
-    r.close()
-    
-    if r.status_code != 200:
-        print('An error ocurred trying to get the Artist of a music.\nError: {}\nArtistID: {}' \
-            .format(data['error'], artistID))
-        return None
-    
-    return data['genres']
 
 def getUserPlaylistsGenres(token, name):
     playlists_data = {}
     playlists_data['playlists'] = []
     # Checar qual playlist falta verificar para fazer update das faltantes ou das musicas faltantes
     # Melhorar performance da funcao, pegando talvez menos musicas de cada playlist para tirar base?
-    # Incluir campo de genero mais destacado da playlist?
     
     def getPlaylistInRange(url, count, bar):
         r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
@@ -271,23 +206,6 @@ def addMusicToPlaylists(token, music, music_genres, playlists):
         if r.status_code != 201:
             print('An error ocurred trying to add one track in a playlist.\nError: {}\nPlaylistID: {}' \
                 "\nMusic: {}".format(data['error'], playlist['id'], music['name']))
-    
-
-def getUserName(token):
-    url = "https://api.spotify.com/v1/me"
-    r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-    
-    data = r.json()
-    r.close()
-
-    if r.status_code != 200:
-        print('An error ocurred trying to get the user info.\nError: {}'.format(data['error']))
-        return None
-    
-    return str(data['display_name'])
-
-def getTokenFromURL(url):
-    return str(url).split('#')[1].split('&')[0].split('=')[1]
 
 def classifyMusicPlaylistsByGenre(genre_list):
     if not path.exists("playlists.json"):
@@ -341,167 +259,8 @@ def classifyMusicPlaylistsByTop3Genre(genre_list):
             
     return selected_playlists
     
-def classifyMusicPlaylistsByGroupGenre(genre_list):
-    abc = None
-    
 def classifyMusicPlaylistsByMetadadata(genre_list):
     abc = None
-    
-def getTrackMetaData(token, track_id):
-    url = "https://api.spotify.com/v1/audio-features/{}".format(str(track_id))
-    r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-    data = r.json()
-    r.close()
-
-    if r.status_code != 200:
-        print('An error ocurred trying to get the metadata of a song.\nError: {}\nTrackID: {}' \
-            .format(data['error'], track_id))
-        return None
-    
-    data['danceability'] = float("{:.3f}".format(data['danceability']))
-    data['energy'] = float("{:.3f}".format(data['energy']))
-    data['loudness'] = float("{:.3f}".format(data['loudness']))
-    data['speechiness'] = float("{:.3f}".format(data['speechiness']))
-    data['acousticness'] = float("{:.3f}".format(data['acousticness']))
-    data['instrumentalness'] = float("{:.3f}".format(data['instrumentalness']))
-    data['liveness'] = float("{:.3f}".format(data['liveness']))
-    data['valence'] = float("{:.3f}".format(data['valence']))
-    data['tempo'] = float("{:.3f}".format(data['tempo']))
-    data['duration_ms'] = float("{:.3f}".format(data['duration_ms']))
-    
-    return data
-
-def getMetadataMedia(metadatas):
-    if metadatas['danceability'] is None or len(metadatas['danceability']) == 0:
-        return metadatas
-    
-    # Fazer sistema de rankeamento, pegar o TIPO da musica
-    # Desvio Padrão
-    
-    metadata = {}
-    metadata['danceability'] = "{:.3f}".format(statistics.fmean(metadatas['danceability']))
-    metadata['energy'] = "{:.3f}".format(statistics.fmean(metadatas['energy']))
-    metadata['loudness'] = "{:.3f}".format(statistics.fmean(metadatas['loudness']))
-    metadata['mode'] = statistics.mode(metadatas['mode'])
-    metadata['speechiness'] = "{:.3f}".format(statistics.fmean(metadatas['speechiness']))
-    metadata['acousticness'] = "{:.3f}".format(statistics.fmean(metadatas['acousticness']))
-    metadata['instrumentalness'] = "{:.3f}".format(statistics.fmean(metadatas['instrumentalness']))
-    metadata['liveness'] = "{:.3f}".format(statistics.fmean(metadatas['liveness']))
-    metadata['valence'] = "{:.3f}".format(statistics.fmean(metadatas['valence']))
-    metadata['tempo'] = "{:.3f}".format(statistics.fmean(metadatas['tempo']))
-    metadata['duration_ms'] = "{:.3f}".format(statistics.fmean(metadatas['duration_ms']))
-    return metadata
-
-def getMetadataDP(metadatas):
-    if metadatas['danceability'] is None or len(metadatas['danceability']) == 0:
-        return metadatas
-    
-    # Fazer sistema de rankeamento, pegar o TIPO da musica
-    # Desvio Padrão
-    
-    metadatas['danceability']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['danceability']['data']))
-    metadatas['energy']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['energy']['data']))
-    metadatas['loudness']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['loudness']['data']))
-    metadatas['mode']['dp'] = statistics.pstdev(metadatas['mode']['data'])
-    metadatas['speechiness']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['speechiness']['data']))
-    metadatas['acousticness']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['acousticness']['data']))
-    metadatas['instrumentalness']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['instrumentalness']['data']))
-    metadatas['liveness']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['liveness']['data']))
-    metadatas['valence']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['valence']['data']))
-    metadatas['tempo']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['tempo']['data']))
-    metadatas['duration_ms']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['duration_ms']['data']))
-    return metadatas
-
-def createMetadataStructure():
-    metadatas = {}
-    metadatas['danceability'] = []
-    metadatas['energy'] = []
-    metadatas['loudness'] = []
-    metadatas['mode'] = []
-    metadatas['speechiness'] = []
-    metadatas['acousticness'] = []
-    metadatas['instrumentalness'] = []
-    metadatas['liveness'] = []
-    metadatas['valence'] = []
-    metadatas['tempo'] = []
-    metadatas['duration_ms'] = []
-    return metadatas
-
-def createMetadataDPStructure():
-    metadatas = {}
-    metadatas['danceability'] = {}
-    metadatas['danceability']['data'] = []
-    metadatas['danceability']['dp'] = 0
-    
-    metadatas['energy'] = {}
-    metadatas['energy']['data'] = []
-    metadatas['energy']['dp'] = 0
-    
-    metadatas['loudness'] = {}
-    metadatas['loudness']['data'] = []
-    metadatas['loudness']['dp'] = 0
-    
-    metadatas['mode'] = {}
-    metadatas['mode']['data'] = []
-    metadatas['mode']['dp'] = 0
-    
-    metadatas['speechiness'] = {}
-    metadatas['speechiness']['data'] = []
-    metadatas['speechiness']['dp'] = 0
-    
-    metadatas['acousticness'] = {}
-    metadatas['acousticness']['data'] = []
-    metadatas['acousticness']['dp'] = 0
-
-    metadatas['instrumentalness'] = {}
-    metadatas['instrumentalness']['data'] = []
-    metadatas['instrumentalness']['dp'] = 0
-    
-    metadatas['liveness'] = {}
-    metadatas['liveness']['data'] = []
-    metadatas['liveness']['dp'] = 0
-    
-    metadatas['valence'] = {}
-    metadatas['valence']['data'] = []
-    metadatas['valence']['dp'] = 0
-    
-    metadatas['tempo'] = {}
-    metadatas['tempo']['data'] = []
-    metadatas['tempo']['dp'] = 0
-
-    metadatas['duration_ms'] = {}
-    metadatas['duration_ms']['data'] = []
-    metadatas['duration_ms']['dp'] = 0
-    
-    return metadatas
-
-def mapMetadataValues(metadatas, current_metadata):
-    metadatas['danceability'].append(current_metadata['danceability'])
-    metadatas['energy'].append(current_metadata['energy'])
-    metadatas['loudness'].append(current_metadata['loudness'])
-    metadatas['mode'].append(current_metadata['mode'])
-    metadatas['speechiness'].append(current_metadata['speechiness'])
-    metadatas['acousticness'].append(current_metadata['acousticness'])
-    metadatas['instrumentalness'].append(current_metadata['instrumentalness'])
-    metadatas['liveness'].append(current_metadata['liveness'])
-    metadatas['valence'].append(current_metadata['valence'])
-    metadatas['tempo'].append(current_metadata['tempo'])
-    metadatas['duration_ms'].append(current_metadata['duration_ms'])
-    return metadatas
-
-def mapMetadataDPValues(metadatas, current_metadata):
-    metadatas['danceability']['data'].append(current_metadata['danceability'])
-    metadatas['energy']['data'].append(current_metadata['energy'])
-    metadatas['loudness']['data'].append(current_metadata['loudness'])
-    metadatas['mode']['data'].append(current_metadata['mode'])
-    metadatas['speechiness']['data'].append(current_metadata['speechiness'])
-    metadatas['acousticness']['data'].append(current_metadata['acousticness'])
-    metadatas['instrumentalness']['data'].append(current_metadata['instrumentalness'])
-    metadatas['liveness']['data'].append(current_metadata['liveness'])
-    metadatas['valence']['data'].append(current_metadata['valence'])
-    metadatas['tempo']['data'].append(current_metadata['tempo'])
-    metadatas['duration_ms']['data'].append(current_metadata['duration_ms'])
-    return metadatas
 
 def generateCSV(token, playlistId):
     url = "https://api.spotify.com/v1/playlists/{}/tracks?fields=items(track(id,artists(id)))&limit=50" \
@@ -534,6 +293,92 @@ def generateCSV(token, playlistId):
             print(structure)
             structure['metadata'] = {}
             structure['genres'] = []
+            
+def testAddMusics(token, playlistID):
+    test_musics = []
+    test_musics.append({"musicID": "4QfMUPyVRurqeIH1k4a9Ky", "include": False})
+    test_musics.append({"musicID": "5UFXAE1QXIGnmALcrQ4DgZ", "include": False})
+    test_musics.append({"musicID": "2gMQHahD4hFjnEYjTTyivU", "include": False})
+    test_musics.append({"musicID": "3QOruXa2lvqIFvOOa2rYyJ", "include": False})
+    test_musics.append({"musicID": "3WHGMx4tWMsJdhHEVmG4ox", "include": False})
+    test_musics.append({"musicID": "2ywk9oDKsNUZ7YXxed4AnA", "include": False})
+    test_musics.append({"musicID": "1TFjgmDNqtfw2R0ruYZkUI", "include": False})
+    test_musics.append({"musicID": "5dvHlfjmu4AaxlTbUYQabN", "include": False})
+    test_musics.append({"musicID": "2h96laC0Hjwx49xROS1rYz", "include": False})
+    test_musics.append({"musicID": "0ecM7uGyjgJnBliXS2fPP9", "include": False})
+    test_musics.append({"musicID": "2aTfkAV3oxoBF5FJvUY4ja", "include": False})
+    test_musics.append({"musicID": "3Rl26h1HiMCV0HFHHVb2IM", "include": False})
+    
+    test_musics.append({"musicID": "0ZALvx5UEaw0lMUexypBI8", "include": True})
+    test_musics.append({"musicID": "6WeNs3jrqfw624KlcNYect", "include": True})
+    test_musics.append({"musicID": "5413LFXLYAJS85VKs6H6ag", "include": True})
+    test_musics.append({"musicID": "2N39ObBUyuEdT2dMvKRTBz", "include": True})
+    test_musics.append({"musicID": "01TyFEZu6mHbffsVfxgrFn", "include": True})
+    test_musics.append({"musicID": "6Ijmj8Z0L31hCp5pLZnT5U", "include": True})
+    test_musics.append({"musicID": "5cW8mZYs5mKGZP5n2azBW3", "include": True})
+    test_musics.append({"musicID": "7l8UyITgVXQyadELQgToFP", "include": True})
+    test_musics.append({"musicID": "1eoGO19WEflJbAV8BLebhr", "include": True})
+    test_musics.append({"musicID": "0ROCe58wXm7sBUPkZaRrnY", "include": True})
+    test_musics.append({"musicID": "0qlwDRhrYcE5JC07JbXTer", "include": True})
+    test_musics.append({"musicID": "35QAUfIbfIXT3p3cWhaKxZ", "include": True})
+    
+    with open("playlists.json", "r") as json_file:
+        data = json.load(json_file)
+        
+    for playlist in data['playlists']:
+        if playlist['id'] == playlistID:
+            for x in range(0, len(test_musics), 1):
+                print("Testing Music[{}]. Novos DP's:".format(x))
+                meta = getTrackMetaData(token, test_musics[x]['musicID'])
+                dp = {}
+                dp['danceability'] = recalculateDP(playlist['metadata']['danceability']['data'], meta['danceability'])
+                dp['energy'] = recalculateDP(playlist['metadata']['energy']['data'], meta['energy'])
+                dp['loudness'] = recalculateDP(playlist['metadata']['loudness']['data'], meta['loudness'])
+                dp['mode'] = recalculateDP(playlist['metadata']['mode']['data'], meta['mode'])
+                dp['speechiness'] = recalculateDP(playlist['metadata']['speechiness']['data'], meta['speechiness'])
+                dp['acousticness'] = recalculateDP(playlist['metadata']['acousticness']['data'], meta['acousticness'])
+                dp['instrumentalness'] = recalculateDP(playlist['metadata']['instrumentalness']['data'], meta['instrumentalness'])
+                dp['liveness'] = recalculateDP(playlist['metadata']['liveness']['data'], meta['liveness'])
+                dp['valence'] = recalculateDP(playlist['metadata']['valence']['data'], meta['valence'])
+                dp['tempo'] = recalculateDP(playlist['metadata']['tempo']['data'], meta['tempo'])
+                dp['duration_ms'] = recalculateDP(playlist['metadata']['duration_ms']['data'], meta['duration_ms'])
+                print('danceability: {} --> variou {}'.format(dp['danceability'], float("{:.4f}".format(abs(dp['danceability'] - playlist['metadata']['danceability']['dp'])))))
+                print('energy: {} --> variou {}'.format(dp['energy'], float("{:.4f}".format(abs(dp['energy'] - playlist['metadata']['energy']['dp'])))))
+                print('loudness: {} --> variou {}'.format(dp['loudness'], float("{:.4f}".format(abs(dp['loudness'] - playlist['metadata']['loudness']['dp'])))))
+                print('mode: {} --> variou {}'.format(dp['mode'], float("{:.4f}".format(abs(dp['mode'] - playlist['metadata']['mode']['dp'])))))
+                print('speechiness: {} --> variou {}'.format(dp['speechiness'], float("{:.4f}".format(abs(dp['speechiness'] - playlist['metadata']['speechiness']['dp'])))))
+                print('acousticness: {} --> variou {}'.format(dp['acousticness'], float("{:.4f}".format(abs(dp['acousticness'] - playlist['metadata']['acousticness']['dp'])))))
+                print('instrumentalness: {} --> variou {}'.format(dp['instrumentalness'], float("{:.4f}".format(abs(dp['instrumentalness'] - playlist['metadata']['instrumentalness']['dp'])))))
+                print('liveness: {} --> variou {}'.format(dp['liveness'], float("{:.4f}".format(abs(dp['liveness'] - playlist['metadata']['liveness']['dp'])))))
+                print('valence: {} --> variou {}'.format(dp['valence'], float("{:.4f}".format(abs(dp['valence'] - playlist['metadata']['valence']['dp'])))))
+                print('tempo: {} --> variou {}'.format(dp['tempo'], float("{:.4f}".format(abs(dp['tempo'] - playlist['metadata']['tempo']['dp'])))))
+                print('duration_ms: {} --> variou {}'.format(dp['duration_ms'], float("{:.4f}".format(abs(dp['duration_ms'] - playlist['metadata']['duration_ms']['dp'])))))
+                print('ERA PARA ADICIONAR? {}\n'.format(test_musics[x]['include']))
+
+
+def recalculateDP(array, value):
+    arr = array.copy()
+    arr.append(value)
+    return float("{:.3f}".format(statistics.pstdev(arr)))
+
+def insort(a, x, lo=0, hi=None):
+    """Insert item x in list a, and keep it sorted assuming a is sorted.
+    If x is already in a, insert it to the right of the rightmost x.
+    Optional args lo (default 0) and hi (default len(a)) bound the
+    slice of a to be searched.
+    """
+
+    if lo < 0:
+        raise ValueError('lo must be non-negative')
+    if hi is None:
+        hi = len(a)
+    while lo < hi:
+        mid = (lo+hi)//2
+        if x < a[mid]:
+            hi = mid
+        else:
+            lo = mid+1
+    a.insert(lo, x)
     
 def main():
     # chromedriver_autoinstaller.install()
@@ -543,8 +388,9 @@ def main():
         name = getUserName(token)
         if name != None:
             getUserPlaylistsGenres(token, name)
-            # generateCSV(token, '4Uz5RgDqU35EIbjykAhamm')
         
+        # generateCSV(token, '4Uz5RgDqU35EIbjykAhamm')
+        # testAddMusics(token, '5I6Xwr1APbaJWJlaiWEbXS')
         # organizeLikedMusics(token)
     
 if __name__ == "__main__":
