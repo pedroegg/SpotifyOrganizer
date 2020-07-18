@@ -1,7 +1,7 @@
 from selenium import webdriver
 from urllib.parse import urlparse
 import time
-import lib.spotify.utils as lib
+import lib.spotify.spotifyUtils as lib
 import model.metadata.metadata as meta
 import os
 import requests as req
@@ -65,3 +65,23 @@ def getTrackMetaData(token, track_id):
         return None
 
     return meta.Metadata().CreateMetadata(data)
+
+def addMusicToPlaylists(token, music, music_genres, playlists):
+    # Reduzir o numero de requests para adicionar a playlist
+    # Fazer adicionar varias musicas para a mesma playlist por vez
+    # E nao em varias playlists cada musica
+    # VERIFICAR E ARRUMAR DUPLICATA
+    for playlist in playlists['playlists']:
+        url = "https://api.spotify.com/v1/playlists/{}/tracks?uris={}".format(playlist['id'], music['uri'])
+        
+        print("Music {} {} matched with {} {} in genre {}" \
+                    .format(music['name'], music_genres, playlist['name'], \
+                        playlist['topGenres'], playlist['matchedGenre']), end='\n\n')
+        
+        r = req.post(url=url, headers={'Authorization':'Bearer ' + token})
+        data = r.json()
+        r.close()
+
+        if r.status_code != 201:
+            print('An error ocurred trying to add one track in a playlist.\nError: {}\nPlaylistID: {}' \
+                "\nMusic: {}".format(data['error'], playlist['id'], music['name']))

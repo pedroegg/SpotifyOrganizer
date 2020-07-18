@@ -15,7 +15,7 @@ class Metadata():
         self.tempo = float
         self.duration_ms = float
 
-    def CreateMetadata(self, data):
+    def CreateMetadata(self, data: {}):
         self.music_id = data['id']
         self.danceability = float("{:.3f}".format(data['danceability']))
         self.energy = float("{:.3f}".format(data['energy']))
@@ -28,7 +28,7 @@ class Metadata():
         self.tempo = float("{:.3f}".format(data['tempo']))
         self.duration_ms = float("{:.3f}".format(data['duration_ms']))
         
-    def CreateJSON(self):
+    def CreateJSON(self) -> {}:
         a = None
         
 class MetadataList():
@@ -61,6 +61,7 @@ class MetadataList():
     def Get(self, index: int) -> tuple(Metadata, err.Error):
         if index < 0:
             return Metadata(), err.Error('Invalid index')
+        
         if self.music_id_list is None or index >= len(self.music_id_list):
             return Metadata(), err.Error('Null list or length smaller than the index requested')
         
@@ -130,3 +131,15 @@ class MetadataList():
         metadata.duration_ms = float("{:.3f}".format(statistics.pstdev(self.duration_ms_list)))
         
         return metadata, None
+    
+    def Sort(self) -> None:
+        self.danceability_list.sort()
+        self.energy_list.sort()
+        self.loudness_list.sort()
+        self.speechiness_list.sort()
+        self.acousticness_list.sort()
+        self.instrumentalness_list.sort()
+        self.liveness_list.sort()
+        self.valence_list.sort()
+        self.tempo_list.sort()
+        self.duration_ms_list.sort()

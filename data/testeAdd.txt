@@ -1,0 +1,336 @@
+Testing Music[0]. Novos DP's:
+danceability: 0.142 --> variou 0.002
+energy: 0.161 --> variou 0.006
+loudness: 3.126 --> variou 0.044
+mode: 0.495 --> variou 0.0028
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.287 --> variou 0.003
+instrumentalness: 0.299 --> variou 0.002
+liveness: 0.171 --> variou 0.003
+valence: 0.265 --> variou 0.001
+tempo: 24.702 --> variou 0.306
+duration_ms: 83542.292 --> variou 335.677
+ERA PARA ADICIONAR? False
+
+Testing Music[1]. Novos DP's:
+danceability: 0.149 --> variou 0.005
+energy: 0.157 --> variou 0.002
+loudness: 3.15 --> variou 0.02
+mode: 0.495 --> variou 0.0028
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.292 --> variou 0.008
+instrumentalness: 0.299 --> variou 0.002
+liveness: 0.172 --> variou 0.002
+valence: 0.263 --> variou 0.003
+tempo: 24.733 --> variou 0.275
+duration_ms: 83083.878 --> variou 122.737
+ERA PARA ADICIONAR? False
+
+Testing Music[2]. Novos DP's:
+danceability: 0.142 --> variou 0.002
+energy: 0.154 --> variou 0.001
+loudness: 3.141 --> variou 0.029
+mode: 0.495 --> variou 0.0028
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.283 --> variou 0.001
+instrumentalness: 0.298 --> variou 0.003
+liveness: 0.172 --> variou 0.002
+valence: 0.265 --> variou 0.001
+tempo: 24.926 --> variou 0.082
+duration_ms: 83140.216 --> variou 66.399
+ERA PARA ADICIONAR? False
+
+Testing Music[3]. Novos DP's:
+danceability: 0.143 --> variou 0.001
+energy: 0.163 --> variou 0.008
+loudness: 3.211 --> variou 0.041
+mode: 0.49 --> variou 0.0022
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.289 --> variou 0.005
+instrumentalness: 0.301 --> variou 0.0
+liveness: 0.172 --> variou 0.002
+valence: 0.264 --> variou 0.002
+tempo: 24.825 --> variou 0.183
+duration_ms: 82944.462 --> variou 262.153
+ERA PARA ADICIONAR? False
+
+Testing Music[4]. Novos DP's:
+danceability: 0.144 --> variou 0.0
+energy: 0.168 --> variou 0.013
+loudness: 3.172 --> variou 0.002
+mode: 0.49 --> variou 0.0022
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.293 --> variou 0.009
+instrumentalness: 0.297 --> variou 0.004
+liveness: 0.171 --> variou 0.003
+valence: 0.263 --> variou 0.003
+tempo: 24.651 --> variou 0.357
+duration_ms: 82062.312 --> variou 1144.303
+ERA PARA ADICIONAR? False
+
+Testing Music[5]. Novos DP's:
+danceability: 0.145 --> variou 0.001
+energy: 0.156 --> variou 0.001
+loudness: 3.161 --> variou 0.009
+mode: 0.49 --> variou 0.0022
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.289 --> variou 0.005
+instrumentalness: 0.297 --> variou 0.004
+liveness: 0.171 --> variou 0.003
+valence: 0.263 --> variou 0.003
+tempo: 26.463 --> variou 1.455
+duration_ms: 82479.625 --> variou 726.99
+ERA PARA ADICIONAR? False
+
+Testing Music[6]. Novos DP's:
+danceability: 0.145 --> variou 0.001
+energy: 0.163 --> variou 0.008
+loudness: 3.166 --> variou 0.004
+mode: 0.495 --> variou 0.0028
+speechiness: 0.06 --> variou 0.0
+acousticness: 0.293 --> variou 0.009
+instrumentalness: 0.312 --> variou 0.011
+liveness: 0.171 --> variou 0.003
+valence: 0.262 --> variou 0.004
+tempo: 25.247 --> variou 0.239
+duration_ms: 82507.854 --> variou 698.761
+ERA PARA ADICIONAR? False
+
+Testing Music[7]. Novos DP's:
+danceability: 0.144 --> variou 0.0
+energy: 0.154 --> variou 0.001
+loudness: 3.125 --> variou 0.045
+mode: 0.49 --> variou 0.0022
+speechiness: 0.06 --> variou 0.0
+acousticness: 0.281 --> variou 0.003
+instrumentalness: 0.315 --> variou 0.014
+liveness: 0.172 --> variou 0.002
+valence: 0.263 --> variou 0.003
+tempo: 25.319 --> variou 0.311
+duration_ms: 82150.395 --> variou 1056.22
+ERA PARA ADICIONAR? False
+
+Testing Music[8]. Novos DP's:
+danceability: 0.155 --> variou 0.011
+energy: 0.157 --> variou 0.002
+loudness: 3.134 --> variou 0.036
+mode: 0.49 --> variou 0.0022
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.282 --> variou 0.002
+instrumentalness: 0.308 --> variou 0.007
+liveness: 0.171 --> variou 0.003
+valence: 0.263 --> variou 0.003
+tempo: 25.222 --> variou 0.214
+duration_ms: 82166.318 --> variou 1040.297
+ERA PARA ADICIONAR? False
+
+Testing Music[9]. Novos DP's:
+danceability: 0.143 --> variou 0.001
+energy: 0.169 --> variou 0.014
+loudness: 3.348 --> variou 0.178
+mode: 0.495 --> variou 0.0028
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.292 --> variou 0.008
+instrumentalness: 0.315 --> variou 0.014
+liveness: 0.171 --> variou 0.003
+valence: 0.265 --> variou 0.001
+tempo: 24.653 --> variou 0.355
+duration_ms: 82044.414 --> variou 1162.201
+ERA PARA ADICIONAR? False
+
+Testing Music[10]. Novos DP's:
+danceability: 0.146 --> variou 0.002
+energy: 0.169 --> variou 0.014
+loudness: 3.256 --> variou 0.086
+mode: 0.495 --> variou 0.0028
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.291 --> variou 0.007
+instrumentalness: 0.312 --> variou 0.011
+liveness: 0.171 --> variou 0.003
+valence: 0.264 --> variou 0.002
+tempo: 24.755 --> variou 0.253
+duration_ms: 82665.075 --> variou 541.54
+ERA PARA ADICIONAR? False
+
+Testing Music[11]. Novos DP's:
+danceability: 0.148 --> variou 0.004
+energy: 0.153 --> variou 0.002
+loudness: 3.125 --> variou 0.045
+mode: 0.49 --> variou 0.0022
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.286 --> variou 0.002
+instrumentalness: 0.309 --> variou 0.008
+liveness: 0.171 --> variou 0.003
+valence: 0.264 --> variou 0.002
+tempo: 25.021 --> variou 0.013
+duration_ms: 89498.59 --> variou 6291.975
+ERA PARA ADICIONAR? False
+
+Testing Music[12]. Novos DP's:
+danceability: 0.143 --> variou 0.001
+energy: 0.153 --> variou 0.002
+loudness: 3.135 --> variou 0.035
+mode: 0.49 --> variou 0.0022
+speechiness: 0.06 --> variou 0.0
+acousticness: 0.287 --> variou 0.003
+instrumentalness: 0.298 --> variou 0.003
+liveness: 0.171 --> variou 0.003
+valence: 0.264 --> variou 0.002
+tempo: 24.764 --> variou 0.244
+duration_ms: 82028.323 --> variou 1178.292
+ERA PARA ADICIONAR? True
+
+Testing Music[13]. Novos DP's:
+danceability: 0.142 --> variou 0.002
+energy: 0.153 --> variou 0.002
+loudness: 3.217 --> variou 0.047
+mode: 0.495 --> variou 0.0028
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.281 --> variou 0.003
+instrumentalness: 0.298 --> variou 0.003
+liveness: 0.171 --> variou 0.003
+valence: 0.268 --> variou 0.002
+tempo: 24.659 --> variou 0.349
+duration_ms: 82568.982 --> variou 637.633
+ERA PARA ADICIONAR? True
+
+Testing Music[14]. Novos DP's:
+danceability: 0.143 --> variou 0.001
+energy: 0.153 --> variou 0.002
+loudness: 3.125 --> variou 0.045
+mode: 0.49 --> variou 0.0022
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.288 --> variou 0.004
+instrumentalness: 0.309 --> variou 0.008
+liveness: 0.171 --> variou 0.003
+valence: 0.266 --> variou 0.0
+tempo: 24.733 --> variou 0.275
+duration_ms: 82176.068 --> variou 1030.547
+ERA PARA ADICIONAR? True
+
+Testing Music[15]. Novos DP's:
+danceability: 0.142 --> variou 0.002
+energy: 0.156 --> variou 0.001
+loudness: 3.194 --> variou 0.024
+mode: 0.495 --> variou 0.0028
+speechiness: 0.06 --> variou 0.0
+acousticness: 0.28 --> variou 0.004
+instrumentalness: 0.299 --> variou 0.002
+liveness: 0.172 --> variou 0.002
+valence: 0.266 --> variou 0.0
+tempo: 24.721 --> variou 0.287
+duration_ms: 82014.012 --> variou 1192.603
+ERA PARA ADICIONAR? True
+
+Testing Music[16]. Novos DP's:
+danceability: 0.143 --> variou 0.001
+energy: 0.156 --> variou 0.001
+loudness: 3.137 --> variou 0.033
+mode: 0.49 --> variou 0.0022
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.281 --> variou 0.003
+instrumentalness: 0.297 --> variou 0.004
+liveness: 0.171 --> variou 0.003
+valence: 0.264 --> variou 0.002
+tempo: 26.223 --> variou 1.215
+duration_ms: 82018.455 --> variou 1188.16
+ERA PARA ADICIONAR? True
+
+Testing Music[17]. Novos DP's:
+danceability: 0.143 --> variou 0.001
+energy: 0.155 --> variou 0.0
+loudness: 3.196 --> variou 0.026
+mode: 0.49 --> variou 0.0022
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.284 --> variou 0.0
+instrumentalness: 0.3 --> variou 0.001
+liveness: 0.171 --> variou 0.003
+valence: 0.267 --> variou 0.001
+tempo: 25.042 --> variou 0.034
+duration_ms: 82010.974 --> variou 1195.641
+ERA PARA ADICIONAR? True
+
+Testing Music[18]. Novos DP's:
+danceability: 0.144 --> variou 0.0
+energy: 0.155 --> variou 0.0
+loudness: 3.284 --> variou 0.114
+mode: 0.495 --> variou 0.0028
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.281 --> variou 0.003
+instrumentalness: 0.299 --> variou 0.002
+liveness: 0.171 --> variou 0.003
+valence: 0.268 --> variou 0.002
+tempo: 24.661 --> variou 0.347
+duration_ms: 82710.407 --> variou 496.208
+ERA PARA ADICIONAR? True
+
+Testing Music[19]. Novos DP's:
+danceability: 0.155 --> variou 0.011
+energy: 0.157 --> variou 0.002
+loudness: 3.126 --> variou 0.044
+mode: 0.49 --> variou 0.0022
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.284 --> variou 0.0
+instrumentalness: 0.298 --> variou 0.003
+liveness: 0.171 --> variou 0.003
+valence: 0.262 --> variou 0.004
+tempo: 24.648 --> variou 0.36
+duration_ms: 82165.371 --> variou 1041.244
+ERA PARA ADICIONAR? True
+
+Testing Music[20]. Novos DP's:
+danceability: 0.142 --> variou 0.002
+energy: 0.157 --> variou 0.002
+loudness: 3.129 --> variou 0.041
+mode: 0.495 --> variou 0.0028
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.284 --> variou 0.0
+instrumentalness: 0.297 --> variou 0.004
+liveness: 0.171 --> variou 0.003
+valence: 0.262 --> variou 0.004
+tempo: 25.087 --> variou 0.079
+duration_ms: 82845.004 --> variou 361.611
+ERA PARA ADICIONAR? True
+
+Testing Music[21]. Novos DP's:
+danceability: 0.145 --> variou 0.001
+energy: 0.157 --> variou 0.002
+loudness: 3.16 --> variou 0.01
+mode: 0.495 --> variou 0.0028
+speechiness: 0.061 --> variou 0.001
+acousticness: 0.281 --> variou 0.003
+instrumentalness: 0.297 --> variou 0.004
+liveness: 0.171 --> variou 0.003
+valence: 0.262 --> variou 0.004
+tempo: 24.818 --> variou 0.19
+duration_ms: 82097.544 --> variou 1109.071
+ERA PARA ADICIONAR? True
+
+Testing Music[22]. Novos DP's:
+danceability: 0.153 --> variou 0.009
+energy: 0.154 --> variou 0.001
+loudness: 3.233 --> variou 0.063
+mode: 0.49 --> variou 0.0022
+speechiness: 0.059 --> variou 0.001
+acousticness: 0.28 --> variou 0.004
+instrumentalness: 0.311 --> variou 0.01
+liveness: 0.171 --> variou 0.003
+valence: 0.265 --> variou 0.001
+tempo: 24.738 --> variou 0.27
+duration_ms: 82054.241 --> variou 1152.374
+ERA PARA ADICIONAR? True
+
+Testing Music[23]. Novos DP's:
+danceability: 0.143 --> variou 0.001
+energy: 0.158 --> variou 0.003
+loudness: 3.169 --> variou 0.001
+mode: 0.49 --> variou 0.0022
+speechiness: 0.06 --> variou 0.0
+acousticness: 0.283 --> variou 0.001
+instrumentalness: 0.296 --> variou 0.005
+liveness: 0.172 --> variou 0.002
+valence: 0.264 --> variou 0.002
+tempo: 24.682 --> variou 0.326
+duration_ms: 82270.55 --> variou 936.065
+ERA PARA ADICIONAR? True
+
