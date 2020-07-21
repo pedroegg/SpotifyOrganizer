@@ -23,6 +23,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.action_chains import ActionChains
+import bisect
 
 clientId = "648f3dc76d64441abf6a5fc53fcdd843"
 
@@ -58,6 +59,10 @@ limitDate = datetime.date(today.year, today.month, today.day - int(sys.argv[1]))
 
 
 """
+@mehod: getSpotifyToken - Getter do token do Spotify pelo login no Chrome
+@return: token do Spotify
+
+
 face <a ng-href="https://www.facebook.com/
 apple <a ng-href="https://appleid.apple.com
 phone <div class="row ng-scope" ng-if="phoneBtnEnabled">
@@ -69,43 +74,49 @@ def getSpotifyToken():
         "&scope=user-read-private playlist-read-private user-library-read " \
         "playlist-read-collaborative playlist-modify-public playlist-modify-private" \
         .format(clientId, 'https://www.google.com.br')
-    
+
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument("--mute-audio")
     chrome_options.add_argument('--no-sandbox')
     driver = webdriver.Chrome(options=chrome_options)
     driver.get(url)
-    
+
     if waitLoginOption:
         while 'google' not in '{uri.scheme}://{uri.netloc}/'.format(uri=urlparse(driver.current_url)):
             # Do the login...
             time.sleep(2)
-    
+
     # Tratar falha, deny do login
-    
+
     token = getTokenFromURL(driver.current_url)
-    
+
     driver.close()
-    
+
     return token
 
+
+"""
+@mehod:
+@param:
+@return:
+"""
 def organizeLikedMusics(token):
     def LikedMusicsInRange(url):
         r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
         data = r.json()
         r.close()
-        
+
         if r.status_code != 200:
             print('An error ocurred trying to get liked musics.\nError: {}\nURL: {}' \
                 .format(data['error'], url))
             return
-        
+
         for music in data['items']:
             date_parts = str(music['added_at']).split('-')
             day = int(date_parts[2].split('T')[0])
             month = int(date_parts[1])
             year = int(date_parts[0])
-            
+
             music_date = datetime.date(year, month, day)
             if not (music_date >= limitDate):
                 return None
@@ -118,36 +129,36 @@ def organizeLikedMusics(token):
                     for genre in genres:
                         if (genre is not None) and (str(genre) not in music_genres):
                             music_genres.append(str(genre))
-                
+
             playlists = classifyMusicPlaylistsByTop3Genre(music_genres)
             if playlists is None:
                 return None
-            
+
             addMusicToPlaylists(token, music['track'], music_genres, playlists)
             music_genres = []
-            
+
         return data['next']
-    
+
     print("Collecting recently saved musics and adding to playlists... Please, wait.")
-    
+
     next_field = LikedMusicsInRange("https://api.spotify.com/v1/me/tracks?offset=0&limit=50")
     while next_field is not None:
         next_field = LikedMusicsInRange(next_field)
-    
-        
+
+
 def getArtistGenres(token, artistID):
     url = "https://api.spotify.com/v1/artists/{}".format(artistID)
-    
+
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-    
+
     data = r.json()
     r.close()
-    
+
     if r.status_code != 200:
         print('An error ocurred trying to get the Artist of a music.\nError: {}\nArtistID: {}' \
             .format(data['error'], artistID))
         return None
-    
+
     return data['genres']
 
 def getUserPlaylistsGenres(token, name):
@@ -156,21 +167,21 @@ def getUserPlaylistsGenres(token, name):
     # Checar qual playlist falta verificar para fazer update das faltantes ou das musicas faltantes
     # Melhorar performance da funcao, pegando talvez menos musicas de cada playlist para tirar base?
     # Incluir campo de genero mais destacado da playlist?
-    
+
     def getPlaylistInRange(url, count, bar):
         r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-        
+
         data = r.json()
         r.close()
-    
+
         if r.status_code != 200:
             print('An error ocurred trying to get the user playlists.\nError: {}\nURL: {}' \
                 .format(data['error'], url))
             return None, count
-        
+
         total = data['total']
         plus_percentage = total/100
-        
+
         playlists = data['items']
         for playlist in playlists:
             if playlist['owner']['display_name'] == name:
@@ -186,36 +197,36 @@ def getUserPlaylistsGenres(token, name):
                     'topGenres': top3genres,
                     'metadata': dp_metadata
                 })
-                
+
             count += plus_percentage
             try:
                 bar.update(count)
             except ValueError:
                 bar.update(100)
-        
+
         return data['next'], count
-    
+
     if (not path.exists("playlists.json")) or updatePlaylistsJSON:
         print("Updating playlists.json file and analyzing your playlists genres... Please, wait.")
         bar = progressbar.ProgressBar(maxval=100, \
             widgets=[progressbar.Bar('=', '[', ']'), ' ', progressbar.Percentage()])
         bar.start()
-        
+
         next_field, count = getPlaylistInRange("https://api.spotify.com/v1/me/playlists?limit=50&offset=0", 0, bar)
         while next_field is not None:
             next_field, count = getPlaylistInRange(next_field, count, bar)
-        
+
         bar.finish()
-        
+
         with open(file='playlists.json', mode='w', encoding='utf8') as json_file:
             json.dump(playlists_data, json_file, ensure_ascii=False, indent=4)
 
-        
+
 def getPlaylistGenres(token, playlistId):
     url = "https://api.spotify.com/v1/playlists/{}/tracks?fields=items(track(id,artists(id)))&limit=50" \
         .format(playlistId)
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-    
+
     data = r.json()
     r.close()
 
@@ -223,12 +234,12 @@ def getPlaylistGenres(token, playlistId):
         print('An error ocurred trying to get tracks of one playlist.\nError: {}\nPlaylistID: {}' \
             .format(data['error'], playlistId))
         return ''
-    
+
     artists = []
     genres = []
     count_genres = {}
     metadatas = createMetadataDPStructure()
-    
+
     for track in data['items']:
         if track['track']['id'] is not None and str(track['track']['id']) != "":
             current_metadata = getTrackMetaData(token, track['track']['id'])
@@ -236,7 +247,7 @@ def getPlaylistGenres(token, playlistId):
         for artist in track['track']['artists']:
             if (artist['id'] is not None) and (str(artist['id']) not in artists):
                 artists.append(str(artist['id']))
-    
+
     for artist in artists:
         genres_artist = getArtistGenres(token, artist)
         if genres_artist is not None:
@@ -248,7 +259,7 @@ def getPlaylistGenres(token, playlistId):
                         count_genres[str(genre)] += 1
                     else:
                         count_genres[str(genre)] = 1
-    
+
     top_genres = sorted(count_genres, key=count_genres.get, reverse=True)[:3]
     return genres, top_genres, metadatas
 
@@ -259,11 +270,11 @@ def addMusicToPlaylists(token, music, music_genres, playlists):
     # VERIFICAR E ARRUMAR DUPLICATA
     for playlist in playlists['playlists']:
         url = "https://api.spotify.com/v1/playlists/{}/tracks?uris={}".format(playlist['id'], music['uri'])
-        
+
         print("Music {} {} matched with {} {} in genre {}" \
                     .format(music['name'], music_genres, playlist['name'], \
                         playlist['topGenres'], playlist['matchedGenre']), end='\n\n')
-        
+
         r = req.post(url=url, headers={'Authorization':'Bearer ' + token})
         data = r.json()
         r.close()
@@ -271,19 +282,19 @@ def addMusicToPlaylists(token, music, music_genres, playlists):
         if r.status_code != 201:
             print('An error ocurred trying to add one track in a playlist.\nError: {}\nPlaylistID: {}' \
                 "\nMusic: {}".format(data['error'], playlist['id'], music['name']))
-    
+
 
 def getUserName(token):
     url = "https://api.spotify.com/v1/me"
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-    
+
     data = r.json()
     r.close()
 
     if r.status_code != 200:
         print('An error ocurred trying to get the user info.\nError: {}'.format(data['error']))
         return None
-    
+
     return str(data['display_name'])
 
 def getTokenFromURL(url):
@@ -293,13 +304,13 @@ def classifyMusicPlaylistsByGenre(genre_list):
     if not path.exists("playlists.json"):
         print("You need to have a playlists.json file! Run it again with the update json parameter.")
         return None
-    
+
     selected_playlists = {}
     selected_playlists['playlists'] = []
-    
+
     with open("playlists.json", "r") as json_file:
         data = json.load(json_file)
-        
+
     for playlist in data['playlists']:
         for top_genre in playlist['topGenres']:
             if str(top_genre) in genre_list:
@@ -310,25 +321,25 @@ def classifyMusicPlaylistsByGenre(genre_list):
                     'matchedGenre': str(top_genre)
                 })
                 break
-            
+
     return selected_playlists
 
-    
+
 def classifyMusicPlaylistsByTotalGenres(genre_list):
     abc = None
-    
+
 def classifyMusicPlaylistsByTop3Genre(genre_list):
     if not path.exists("playlists.json"):
         print("You need to have a playlists.json file! Run it again with the update json parameter.")
         return None
-    
+
     selected_playlists = {}
     selected_playlists['playlists'] = []
-    
+
     with open("playlists.json", "r") as json_file:
         data = json.load(json_file)
-        
-    for playlist in data['playlists']:  
+
+    for playlist in data['playlists']:
         for top_genre in playlist['topGenres']:
             if str(top_genre) in genre_list:
                 selected_playlists['playlists'].append({
@@ -338,15 +349,15 @@ def classifyMusicPlaylistsByTop3Genre(genre_list):
                     'matchedGenre': str(top_genre)
                 })
                 break
-            
+
     return selected_playlists
-    
+
 def classifyMusicPlaylistsByGroupGenre(genre_list):
     abc = None
-    
+
 def classifyMusicPlaylistsByMetadadata(genre_list):
     abc = None
-    
+
 def getTrackMetaData(token, track_id):
     url = "https://api.spotify.com/v1/audio-features/{}".format(str(track_id))
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
@@ -357,7 +368,7 @@ def getTrackMetaData(token, track_id):
         print('An error ocurred trying to get the metadata of a song.\nError: {}\nTrackID: {}' \
             .format(data['error'], track_id))
         return None
-    
+
     data['danceability'] = float("{:.3f}".format(data['danceability']))
     data['energy'] = float("{:.3f}".format(data['energy']))
     data['loudness'] = float("{:.3f}".format(data['loudness']))
@@ -368,16 +379,16 @@ def getTrackMetaData(token, track_id):
     data['valence'] = float("{:.3f}".format(data['valence']))
     data['tempo'] = float("{:.3f}".format(data['tempo']))
     data['duration_ms'] = float("{:.3f}".format(data['duration_ms']))
-    
+
     return data
 
 def getMetadataMedia(metadatas):
     if metadatas['danceability'] is None or len(metadatas['danceability']) == 0:
         return metadatas
-    
+
     # Fazer sistema de rankeamento, pegar o TIPO da musica
     # Desvio Padrão
-    
+
     metadata = {}
     metadata['danceability'] = "{:.3f}".format(statistics.fmean(metadatas['danceability']))
     metadata['energy'] = "{:.3f}".format(statistics.fmean(metadatas['energy']))
@@ -392,13 +403,14 @@ def getMetadataMedia(metadatas):
     metadata['duration_ms'] = "{:.3f}".format(statistics.fmean(metadatas['duration_ms']))
     return metadata
 
+
 def getMetadataDP(metadatas):
     if metadatas['danceability'] is None or len(metadatas['danceability']) == 0:
         return metadatas
-    
+
     # Fazer sistema de rankeamento, pegar o TIPO da musica
     # Desvio Padrão
-    
+
     metadatas['danceability']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['danceability']['data']))
     metadatas['energy']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['energy']['data']))
     metadatas['loudness']['dp'] = "{:.3f}".format(statistics.pstdev(metadatas['loudness']['data']))
@@ -432,23 +444,23 @@ def createMetadataDPStructure():
     metadatas['danceability'] = {}
     metadatas['danceability']['data'] = []
     metadatas['danceability']['dp'] = 0
-    
+
     metadatas['energy'] = {}
     metadatas['energy']['data'] = []
     metadatas['energy']['dp'] = 0
-    
+
     metadatas['loudness'] = {}
     metadatas['loudness']['data'] = []
     metadatas['loudness']['dp'] = 0
-    
+
     metadatas['mode'] = {}
     metadatas['mode']['data'] = []
     metadatas['mode']['dp'] = 0
-    
+
     metadatas['speechiness'] = {}
     metadatas['speechiness']['data'] = []
     metadatas['speechiness']['dp'] = 0
-    
+
     metadatas['acousticness'] = {}
     metadatas['acousticness']['data'] = []
     metadatas['acousticness']['dp'] = 0
@@ -456,15 +468,15 @@ def createMetadataDPStructure():
     metadatas['instrumentalness'] = {}
     metadatas['instrumentalness']['data'] = []
     metadatas['instrumentalness']['dp'] = 0
-    
+
     metadatas['liveness'] = {}
     metadatas['liveness']['data'] = []
     metadatas['liveness']['dp'] = 0
-    
+
     metadatas['valence'] = {}
     metadatas['valence']['data'] = []
     metadatas['valence']['dp'] = 0
-    
+
     metadatas['tempo'] = {}
     metadatas['tempo']['data'] = []
     metadatas['tempo']['dp'] = 0
@@ -472,7 +484,7 @@ def createMetadataDPStructure():
     metadatas['duration_ms'] = {}
     metadatas['duration_ms']['data'] = []
     metadatas['duration_ms']['dp'] = 0
-    
+
     return metadatas
 
 def mapMetadataValues(metadatas, current_metadata):
@@ -490,24 +502,24 @@ def mapMetadataValues(metadatas, current_metadata):
     return metadatas
 
 def mapMetadataDPValues(metadatas, current_metadata):
-    metadatas['danceability']['data'].append(current_metadata['danceability'])
-    metadatas['energy']['data'].append(current_metadata['energy'])
-    metadatas['loudness']['data'].append(current_metadata['loudness'])
-    metadatas['mode']['data'].append(current_metadata['mode'])
-    metadatas['speechiness']['data'].append(current_metadata['speechiness'])
-    metadatas['acousticness']['data'].append(current_metadata['acousticness'])
-    metadatas['instrumentalness']['data'].append(current_metadata['instrumentalness'])
-    metadatas['liveness']['data'].append(current_metadata['liveness'])
-    metadatas['valence']['data'].append(current_metadata['valence'])
-    metadatas['tempo']['data'].append(current_metadata['tempo'])
-    metadatas['duration_ms']['data'].append(current_metadata['duration_ms'])
+    insort(metadatas['danceability']['data'], current_metadata['danceability'])
+    insort(metadatas['energy']['data'], current_metadata['energy'])
+    insort(metadatas['loudness']['data'], current_metadata['loudness'])
+    insort(metadatas['mode']['data'], current_metadata['mode'])
+    insort(metadatas['speechiness']['data'], current_metadata['speechiness'])
+    insort(metadatas['acousticness']['data'], current_metadata['acousticness'])
+    insort(metadatas['instrumentalness']['data'], current_metadata['instrumentalness'])
+    insort(metadatas['liveness']['data'], current_metadata['liveness'])
+    insort(metadatas['valence']['data'], current_metadata['valence'])
+    insort(metadatas['tempo']['data'], current_metadata['tempo'])
+    insort(metadatas['duration_ms']['data'], current_metadata['duration_ms'])
     return metadatas
 
 def generateCSV(token, playlistId):
     url = "https://api.spotify.com/v1/playlists/{}/tracks?fields=items(track(id,artists(id)))&limit=50" \
         .format(playlistId)
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-    
+
     data = r.json()
     r.close()
 
@@ -515,11 +527,11 @@ def generateCSV(token, playlistId):
         print('An error ocurred trying to get tracks of one playlist.\nError: {}\nPlaylistID: {}' \
             .format(data['error'], playlistId))
         return ''
-    
+
     structure = {}
     structure['metadata'] = {}
     structure['genres'] = []
-    
+
     for track in data['items']:
         if track['track']['id'] is not None and str(track['track']['id']) != "":
             current_metadata = getTrackMetaData(token, track['track']['id'])
@@ -534,18 +546,417 @@ def generateCSV(token, playlistId):
             print(structure)
             structure['metadata'] = {}
             structure['genres'] = []
+
+"""
+* @method: findRelevantAttributes - Metodo para definir o top 3 atributos mais importantes com base na repeticao do valor dentro da playlist
+* @param: playlistID
+* @return: tops - Top 3 atributos mais importantes
+"""
+def findRelevantAttributes( playlistID ):
+
+    tops = {}
+    tops['count'] = [0,0,0]
+    tops['atributo'] = [ ' ', ' ', ' ' ]
+
+    aux20 = int(0)
+    aux21 = float(0.0)
+
+    with open("playlists.json", "r") as json_file:
+        data = json.load(json_file)
+
+    metadatas = {}
+    metadatas['danceability2'] = [0, 0.0, 'danceability']
+    metadatas['energy2'] = [0,0, 'energy']
+    metadatas['loudness2'] = [0,0, 'loudness']
+    metadatas['speechiness2'] = [0,0, 'speechiness']
+    metadatas['acousticness2'] = [0,0, 'acousticness']
+    metadatas['instrumentalness2'] = [0,0, 'instrumentalness']
+    metadatas['liveness2'] = [0,0, 'liveness']
+    metadatas['valence2'] = [0,0, 'valence']
+    metadatas['tempo2'] = [0,0, 'tempo']
+
+    for playlist in data['playlists']:
+        if playlist['id'] == playlistID:
+
+            for danceability_datas in playlist['metadata']['danceability']['data']:
+
+                # Conta quanto x valor repete pela playlist com 2 casas de magnitude/precisao
+                # aux e' um auxiliar p/ ter que fazer menos acessos ao arquivo e menos count() e format()
+
+                aux = float("{:.2f}".format( danceability_datas ))
+                if( aux != aux21 ):
+
+                    # Musicas com atributo com variacao aceitavel
+                    if( aux20 > int(metadatas['danceability2'][0]) ):
+                        metadatas['danceability2'][0] = aux20
+                        metadatas['danceability2'][1] = aux21
+                    
+                    aux21 = aux
+                    aux20 = 0
+
+                aux20 += 1
+
+            aux20 = int(0)
+            aux21 = float(0.0)
+            for energy_datas in playlist['metadata']['energy']['data']:
+
+                aux = float("{:.2f}".format( energy_datas ))
+                if( aux != aux21 ):
+
+                    # Musicas com atributo com variacao aceitavel
+                    if( aux20 > int(metadatas['energy2'][0]) ):
+                        metadatas['energy2'][0] = aux20
+                        metadatas['energy2'][1] = aux21
+                    
+                    aux21 = aux
+                    aux20 = 0
+
+                aux20 += 1
+
+            aux20 = int(0)
+            aux21 = int(0)
+            for loudness_datas in playlist['metadata']['loudness']['data']:
+
+                aux = int(loudness_datas)
+                if( aux != aux21 ):
+
+                    # Musicas com atributo com variacao aceitavel
+                    if( aux20 > int(metadatas['loudness2'][0]) ):
+                        metadatas['loudness2'][0] = aux20
+                        metadatas['loudness2'][1] = aux21
+                    
+                    aux21 = aux
+                    aux20 = 0
+
+                aux20 += 1
+
+            aux20 = int(0)
+            aux21 = float(0.0)
+            for speechiness_datas in playlist['metadata']['speechiness']['data']:
+
+                aux = float("{:.2f}".format( speechiness_datas ))
+                if( aux != aux21 ):
+
+                    # Musicas com atributo com variacao aceitavel
+                    if( aux20 > int(metadatas['speechiness2'][0]) ):
+                        metadatas['speechiness2'][0] = aux20
+                        metadatas['speechiness2'][1] = aux21
+                    
+                    aux21 = aux
+                    aux20 = 0
+
+                aux20 += 1
+
+            aux20 = int(0)
+            aux21 = float(0.0)
+            for acousticness_datas in playlist['metadata']['acousticness']['data']:
+
+                aux = float("{:.2f}".format( acousticness_datas ))
+                if( aux != aux21 ):
+
+                    # Musicas com atributo com variacao aceitavel
+                    if( aux20 > int(metadatas['acousticness2'][0]) ):
+                        metadatas['acousticness2'][0] = aux20
+                        metadatas['acousticness2'][1] = aux21
+                    
+                    aux21 = aux
+                    aux20 = 0
+
+                aux20 += 1
+
+            aux20 = int(0)
+            aux21 = float(0.0)
+            for instrumentalness_datas in playlist['metadata']['instrumentalness']['data']:
+
+                aux = float("{:.2f}".format( instrumentalness_datas ))
+                if( aux != aux21 ):
+
+                    # Musicas com atributo com variacao aceitavel
+                    if( aux20 > int(metadatas['instrumentalness2'][0]) ):
+                        metadatas['instrumentalness2'][0] = aux20
+                        metadatas['instrumentalness2'][1] = aux21
+                    
+                    aux21 = aux
+                    aux20 = 0
+
+                aux20 += 1
+
+            aux20 = int(0)
+            aux21 = float(0.0)
+            for liveness_datas in playlist['metadata']['liveness']['data']:
+
+                aux = float("{:.2f}".format( liveness_datas ))
+                if( aux != aux21 ):
+
+                    # Musicas com atributo com variacao aceitavel
+                    if( aux20 > int(metadatas['liveness2'][0]) ):
+                        metadatas['liveness2'][0] = aux20
+                        metadatas['liveness2'][1] = aux21
+                    
+                    aux21 = aux
+                    aux20 = 0
+
+                aux20 += 1
+
+            aux20 = int(0)
+            aux21 = float(0.0)
+            for valence_datas in playlist['metadata']['valence']['data']:
+
+                aux = float("{:.2f}".format( valence_datas ))
+                if( aux != aux21 ):
+
+                    # Musicas com atributo com variacao aceitavel
+                    if( aux20 > int(metadatas['valence2'][0]) ):
+                        metadatas['valence2'][0] = aux20
+                        metadatas['valence2'][1] = aux21
+                    
+                    aux21 = aux
+                    aux20 = 0
+
+                aux20 += 1
+
+            aux20 = int(0)
+            aux21 = float(0.0)
+            for tempo_datas in playlist['metadata']['tempo']['data']:
+
+                aux = float("{:.2f}".format( tempo_datas ))
+                if( aux != aux21 ):
+
+                    # Musicas com atributo com variacao aceitavel
+                    if( aux20 > int(metadatas['tempo2'][0]) ):
+                        metadatas['tempo2'][0] = aux20
+                        metadatas['tempo2'][1] = aux21
+
+                    aux21 = aux
+                    aux20 = 0
+
+                aux20 += 1
+
+    #Definir qual atributo e' o mais importante com base na repeticao dos valores
+
+    #se possivel fazer de jeito menos gambiarrento
+
+    #substituir caso ache um valor maior que o menor dentre os tops
+
+    tops['count'][2] = metadatas['danceability2'][0]
+    tops['atributo'][2] = metadatas['danceability2'][2]
+
+    tops['count'][1] = metadatas['energy2'][0]
+    tops['atributo'][1] = metadatas['energy2'][2]
+
+    if( tops['count'][1] > tops['count'][2] ):
+        aux = [ tops['count'][1], tops['atributo'][1] ]
+
+        tops['count'][1] = tops['count'][2]
+        tops['atributo'][1] = tops['atributo'][2]
+
+        tops['count'][2] = aux[0]
+        tops['atributo'][2] = aux[1]
+
+    tops['count'][0] = metadatas['loudness2'][0]
+    tops['atributo'][0] = metadatas['loudness2'][2]
+
+    #bubble sort
+    if( tops['count'][0] > tops['count'][1] ):
+        aux = [ tops['count'][0], tops['atributo'][0] ]
+
+        tops['count'][0] = tops['count'][1]
+        tops['atributo'][0] = tops['atributo'][1]
+
+        tops['count'][1] = aux[0]
+        tops['atributo'][1] = aux[1]
+
+        if( tops['count'][1] > tops['count'][2] ):
+            aux = [ tops['count'][1], tops['atributo'][1] ]
+
+            tops['count'][1] = tops['count'][2]
+            tops['atributo'][1] = tops['atributo'][2]
+
+            tops['count'][2] = aux[0]
+            tops['atributo'][2] = aux[1]
     
+    if( metadatas['speechiness2'][0] > tops['count'][0] ):
+        tops['count'][0] = metadatas['speechiness2'][0]
+        tops['atributo'][0] = metadatas['speechiness2'][2]
+
+        #bubble sort
+        if( tops['count'][0] > tops['count'][1] ):
+            aux = [ tops['count'][0], tops['atributo'][0] ]
+
+            tops['count'][0] = tops['count'][1]
+            tops['atributo'][0] = tops['atributo'][1]
+
+            tops['count'][1] = aux[0]
+            tops['atributo'][1] = aux[1]
+
+            if( tops['count'][1] > tops['count'][2] ):
+                aux = [ tops['count'][1], tops['atributo'][1] ]
+
+                tops['count'][1] = tops['count'][2]
+                tops['atributo'][1] = tops['atributo'][2]
+
+                tops['count'][2] = aux[0]
+                tops['atributo'][2] = aux[1]
+
+    if( metadatas['acousticness2'][0] > tops['count'][0] ):
+        tops['count'][0] = metadatas['acousticness2'][0]
+        tops['atributo'][0] = metadatas['acousticness2'][2]
+
+            #bubble sort
+        if( tops['count'][0] > tops['count'][1] ):
+            aux = [ tops['count'][0], tops['atributo'][0] ]
+
+            tops['count'][0] = tops['count'][1]
+            tops['atributo'][0] = tops['atributo'][1]
+
+            tops['count'][1] = aux[0]
+            tops['atributo'][1] = aux[1]
+
+            if( tops['count'][1] > tops['count'][2] ):
+                aux = [ tops['count'][1], tops['atributo'][1] ]
+
+                tops['count'][1] = tops['count'][2]
+                tops['atributo'][1] = tops['atributo'][2]
+
+                tops['count'][2] = aux[0]
+                tops['atributo'][2] = aux[1]
+
+    if( metadatas['instrumentalness2'][0] > tops['count'][0] ):
+        tops['count'][0] = metadatas['instrumentalness2'][0]
+        tops['atributo'][0] = metadatas['instrumentalness2'][2]
+
+            #bubble sort
+        if( tops['count'][0] > tops['count'][1] ):
+            aux = [ tops['count'][0], tops['atributo'][0] ]
+
+            tops['count'][0] = tops['count'][1]
+            tops['atributo'][0] = tops['atributo'][1]
+
+            tops['count'][1] = aux[0]
+            tops['atributo'][1] = aux[1]
+
+            if( tops['count'][1] > tops['count'][2] ):
+                aux = [ tops['count'][1], tops['atributo'][1] ]
+
+                tops['count'][1] = tops['count'][2]
+                tops['atributo'][1] = tops['atributo'][2]
+
+                tops['count'][2] = aux[0]
+                tops['atributo'][2] = aux[1]
+
+    if( metadatas['liveness2'][0] > tops['count'][0] ):
+        tops['count'][0] = metadatas['liveness2'][0]
+        tops['atributo'][0] = metadatas['liveness2'][2]
+
+            #bubble sort
+        if( tops['count'][0] > tops['count'][1] ):
+            aux = [ tops['count'][0], tops['atributo'][0] ]
+
+            tops['count'][0] = tops['count'][1]
+            tops['atributo'][0] = tops['atributo'][1]
+
+            tops['count'][1] = aux[0]
+            tops['atributo'][1] = aux[1]
+
+            if( tops['count'][1] > tops['count'][2] ):
+                aux = [ tops['count'][1], tops['atributo'][1] ]
+
+                tops['count'][1] = tops['count'][2]
+                tops['atributo'][1] = tops['atributo'][2]
+
+                tops['count'][2] = aux[0]
+                tops['atributo'][2] = aux[1]
+
+    if( metadatas['valence2'][0] > tops['count'][0] ):
+        tops['count'][0] = metadatas['valence2'][0]
+        tops['atributo'][0] = metadatas['valence2'][2]
+
+            #bubble sort
+        if( tops['count'][0] > tops['count'][1] ):
+            aux = [ tops['count'][0], tops['atributo'][0] ]
+
+            tops['count'][0] = tops['count'][1]
+            tops['atributo'][0] = tops['atributo'][1]
+
+            tops['count'][1] = aux[0]
+            tops['atributo'][1] = aux[1]
+
+            if( tops['count'][1] > tops['count'][2] ):
+                aux = [ tops['count'][1], tops['atributo'][1] ]
+
+                tops['count'][1] = tops['count'][2]
+                tops['atributo'][1] = tops['atributo'][2]
+
+                tops['count'][2] = aux[0]
+                tops['atributo'][2] = aux[1]
+
+    if( metadatas['tempo2'][0] > tops['count'][0] ):
+        tops['count'][0] = metadatas['tempo2'][0]
+        tops['atributo'][0] = metadatas['tempo2'][2]
+
+            #bubble sort
+        if( tops['count'][0] > tops['count'][1] ):
+            aux = [ tops['count'][0], tops['atributo'][0] ]
+
+            tops['count'][0] = tops['count'][1]
+            tops['atributo'][0] = tops['atributo'][1]
+
+            tops['count'][1] = aux[0]
+            tops['atributo'][1] = aux[1]
+
+            if( tops['count'][1] > tops['count'][2] ):
+                aux = [ tops['count'][1], tops['atributo'][1] ]
+
+                tops['count'][1] = tops['count'][2]
+                tops['atributo'][1] = tops['atributo'][2]
+
+                tops['count'][2] = aux[0]
+                tops['atributo'][2] = aux[1]
+
+
+
+    return tops['atributo']
+
+"""
+Metodo para inserir de forma organizada em estrutura
+Metodo usado em mapMetadataValues(metadatas, current_metadata)
+
+"""
+
+def insort(a, x, lo=0, hi=None):
+    """Insert item x in list a, and keep it sorted assuming a is sorted.
+    If x is already in a, insert it to the right of the rightmost x.
+    Optional args lo (default 0) and hi (default len(a)) bound the
+    slice of a to be searched.
+    """
+
+    if lo < 0:
+        raise ValueError('lo must be non-negative')
+    if hi is None:
+        hi = len(a)
+    while lo < hi:
+        mid = (lo+hi)//2
+        if x < a[mid]:
+            hi = mid
+        else:
+            lo = mid+1
+    a.insert(lo, x)
+
 def main():
-    # chromedriver_autoinstaller.install()
+    chromedriver_autoinstaller.install()
     token = getSpotifyToken()
     if token != None:
         # print(token)
         name = getUserName(token)
         if name != None:
-            getUserPlaylistsGenres(token, name)
+            #getUserPlaylistsGenres(token, name)
             # generateCSV(token, '4Uz5RgDqU35EIbjykAhamm')
-        
+            #mapMetadataDPValues(token, name)
         # organizeLikedMusics(token)
-    
+            print(findRelevantAttributes( "5I6Xwr1APbaJWJlaiWEbXS" ))
+
+
+
+
 if __name__ == "__main__":
     main()
