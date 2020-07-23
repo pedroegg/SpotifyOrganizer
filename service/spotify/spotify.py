@@ -3,10 +3,12 @@ from urllib.parse import urlparse
 import time
 import lib.spotify.spotifyUtils as lib
 import model.metadata.metadata as meta
+import model.spotify.spotify as model
+import model.error.err as err
 import os
 import requests as req
 
-def getSpotifyToken():
+def getSpotifyToken() -> str:
     url = "https://accounts.spotify.com/authorize?client_id={}&response_type=token&redirect_uri={}" \
         "&scope=user-read-private playlist-read-private user-library-read " \
         "playlist-read-collaborative playlist-modify-public playlist-modify-private" \
@@ -28,20 +30,7 @@ def getSpotifyToken():
     driver.close()
     return token
 
-def getArtistGenres(token, artistID):
-    url = "https://api.spotify.com/v1/artists/{}".format(artistID)
-    r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-    data = r.json()
-    r.close()
-    
-    if r.status_code != 200:
-        print('An error ocurred trying to get the Artist of a music.\nError: {}\nArtistID: {}' \
-            .format(data['error'], artistID))
-        return None
-    
-    return data['genres']
-
-def getUserName(token):
+def getUserName(token: str) -> tuple(str, err.Error):
     url = "https://api.spotify.com/v1/me"
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
     data = r.json()
@@ -53,20 +42,24 @@ def getUserName(token):
     
     return str(data['display_name'])
 
-def getTrackMetaData(token, track_id):
+def getTrackMetaData(token: str, track_id: str) -> tuple(meta.Metadata, err.Error):
     url = "https://api.spotify.com/v1/audio-features/{}".format(str(track_id))
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
     data = r.json()
     r.close()
 
     if r.status_code != 200:
-        print('An error ocurred trying to get the metadata of a song.\nError: {}\nTrackID: {}' \
+        error = err.Error('An error ocurred trying to get the metadata of a song.\nError: {}\nTrackID: {}' \
             .format(data['error'], track_id))
-        return None
+            
+        return meta.Metadata(), error
+    
+    metadata = meta.Metadata()
+    metadata.CreateMetadata(data)
 
-    return meta.Metadata().CreateMetadata(data)
+    return metadata, None
 
-def addMusicToPlaylists(token, music, music_genres, playlists):
+def addMusicToPlaylists(token: str, music: {}, music_genres: [], playlists: []) -> err.Error:
     # Reduzir o numero de requests para adicionar a playlist
     # Fazer adicionar varias musicas para a mesma playlist por vez
     # E nao em varias playlists cada musica
@@ -85,3 +78,23 @@ def addMusicToPlaylists(token, music, music_genres, playlists):
         if r.status_code != 201:
             print('An error ocurred trying to add one track in a playlist.\nError: {}\nPlaylistID: {}' \
                 "\nMusic: {}".format(data['error'], playlist['id'], music['name']))
+            
+def getArtist(token: str, artistID: str) -> tuple(model.Artist, err.Error):
+    url = "https://api.spotify.com/v1/artists/{}".format(artistID)
+    r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
+    data = r.json()
+    r.close()
+    
+    if r.status_code != 200:
+        error = err.Error('An error ocurred trying to get the Artist of a music.\nError: {}\nArtistID: {}' \
+            .format(data['error'], artistID))
+        
+        return model.Artist(), error
+    
+    artist = model.Artist()
+    artist.CreateArtist(data)
+    
+    return artist, None
+
+def getTrack(token: str, trackID: str) -> tuple(model.Track, err.Error):
+    a = None
