@@ -41,49 +41,13 @@ limitDate = datetime.date(today.year, today.month, today.day - int(sys.argv[1]))
 # Fazer parametro para varredura de playlists com apenas playlists selecionadas. Poupar tempo e cust
 
 def organizeLikedMusics(token):
-    def LikedMusicsInRange(url):
-        r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
-        data = r.json()
-        r.close()
-        
-        if r.status_code != 200:
-            print('An error ocurred trying to get liked musics.\nError: {}\nURL: {}' \
-                .format(data['error'], url))
-            return
-        
-        for music in data['items']:
-            date_parts = str(music['added_at']).split('-')
-            day = int(date_parts[2].split('T')[0])
-            month = int(date_parts[1])
-            year = int(date_parts[0])
-            
-            music_date = datetime.date(year, month, day)
-            if not (music_date >= limitDate):
-                return None
-
-            # Fazer tratamento para vibes usando get-audio-features/
-            music_genres = []
-            for artist in music['track']['artists']:
-                if artist['id'] is not None:
-                    genres = getArtistGenres(token, str(artist['id']))
-                    for genre in genres:
-                        if (genre is not None) and (str(genre) not in music_genres):
-                            music_genres.append(str(genre))
-                
-            playlists = classifyMusicPlaylistsByTop3Genre(music_genres)
-            if playlists is None:
-                return None
-            
-            addMusicToPlaylists(token, music['track'], music_genres, playlists)
-            music_genres = []
-            
-        return data['next']
-    
     print("Collecting recently saved musics and adding to playlists... Please, wait.")
     
-    next_field = LikedMusicsInRange("https://api.spotify.com/v1/me/tracks?offset=0&limit=50")
-    while next_field is not None:
-        next_field = LikedMusicsInRange(next_field)
+    # playlists_data, error = classifyMusicPlaylistsByTop3Genre(track.genres)
+    # if (error is not None) or (playlists_data is None):
+            
+    # addMusicToPlaylists(token, music['track'], music_genres, playlists)
+    # music_genres = []
 
 def getUserPlaylistsGenres(token, name):
     playlists_data = {}

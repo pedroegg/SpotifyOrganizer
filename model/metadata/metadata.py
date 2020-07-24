@@ -16,7 +16,7 @@ class Metadata():
         self.tempo = float
         self.duration_ms = float
 
-    def CreateMetadata(self, data: {}):
+    def CreateMetadata(self, data: dict):
         self.id = data['id']
         self.danceability = float("{:.3f}".format(data['danceability']))
         self.energy = float("{:.3f}".format(data['energy']))
@@ -29,8 +29,20 @@ class Metadata():
         self.tempo = float("{:.3f}".format(data['tempo']))
         self.duration_ms = float("{:.3f}".format(data['duration_ms']))
         
-    def CreateJSON(self) -> {}:
-        a = None
+    def CreateJSON(self) -> dict:
+        metadata = {}
+        metadata['id'] = self.id
+        metadata['energy'] = self.energy
+        metadata['loudness'] = self.loudness
+        metadata['speechiness'] = self.speechiness
+        metadata['acousticness'] = self.acousticness
+        metadata['instrumentalness'] = self.instrumentalness
+        metadata['liveness'] = self.liveness
+        metadata['valence'] = self.valence
+        metadata['tempo'] = self.tempo
+        metadata['duration_ms'] = self.duration_ms
+        
+        return metadata
 
 class MetadataList():
     """ Class to list metadata information in a Pandas DataFrame"""
@@ -136,5 +148,5 @@ class MetadataList():
         
         return metadata, None
     
-    def Sort(self, field) -> None:
+    def Sort(self, field: str) -> None:
         return list(self.metadataFrame[field].sort_values(ascending=True, kind='quicksort'))

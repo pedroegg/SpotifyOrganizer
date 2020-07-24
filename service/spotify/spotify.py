@@ -6,6 +6,7 @@ import model.metadata.metadata as meta
 import model.spotify.spotify as model
 import model.error.err as err
 import os
+import datetime
 import requests as req
 
 def getSpotifyToken() -> str:
@@ -59,7 +60,7 @@ def getTrackMetaData(token: str, track_id: str) -> tuple(meta.Metadata, err.Erro
 
     return metadata, None
 
-def addMusicToPlaylists(token: str, music: {}, music_genres: [], playlists: []) -> err.Error:
+def addMusicToPlaylists(token: str, music: dict, music_genres: list, playlists: list) -> err.Error:
     # Reduzir o numero de requests para adicionar a playlist
     # Fazer adicionar varias musicas para a mesma playlist por vez
     # E nao em varias playlists cada musica
@@ -98,5 +99,17 @@ def getArtist(token: str, artistID: str) -> tuple(model.Artist, err.Error):
     
     return artist, None
 
-def getTrack(token: str, trackID: str) -> tuple(model.Track, err.Error):
-    a = None
+def getLikedMusics(token: str, limitDate: datetime.date) -> tuple(list, err.Error):
+    url = "https://api.spotify.com/v1/me/tracks?offset=0&limit=50"
+    tracks = []
+    
+    segment_tracks, next_field, error = lib.getLikedMusicsByRangeURL(token, limitDate, url)
+    while error is None:
+        tracks.extend(segment_tracks)
+        
+        if next_field is None:
+            break
+            
+        segment_tracks, next_field, error = lib.getLikedMusicsByRangeURL(token, limitDate, next_field)
+
+    return tracks, error

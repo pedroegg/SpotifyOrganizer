@@ -23,8 +23,13 @@ def generateCSV(token: str, playlistId: int) -> None:
     
     for track in data['items']:
         if track['track']['id'] is not None and str(track['track']['id']) != "":
-            current_metadata = spotify.getTrackMetaData(token, track['track']['id'])
-            structure['metadata'] = current_metadata
+            current_metadata, error = spotify.getTrackMetaData(token, track['track']['id'])
+            if error is not None:
+                print(error.Message)
+                structure['genres'] = []
+                continue
+            
+            structure['metadata'] = current_metadata.CreateJSON()
             for artist_data in track['track']['artists']:
                 if (artist_data['id'] is not None):
                     artist, error = spotify.getArtist(token, artist_data['id'])
@@ -37,7 +42,6 @@ def generateCSV(token: str, playlistId: int) -> None:
                             if str(genre) not in structure['genres']:
                                 structure['genres'].append(str(genre))
             print(structure)
-            structure['metadata'] = {}
             structure['genres'] = []
             
 def testAddMusics(token: str, playlistID: int) -> None:

@@ -10,7 +10,7 @@ class Track():
         self.genres = []
         self.metadata = meta.Metadata
         
-    def CreateTrack(self, token:str, data: {}):
+    def CreateTrack(self, token: str, data: dict) -> None:
         self.id = data['id']
         self.name = data['name']
         self.uri = data['uri']
@@ -31,7 +31,7 @@ class Artist():
         self.uri = str
         self.genres = []
         
-    def CreateArtist(self, data: {}):
+    def CreateArtist(self, data: dict) -> None:
         self.id = data['id']
         self.name = data['name']
         self.uri = data['uri']
@@ -45,8 +45,8 @@ class Playlist():
         self.topGenres = []
         self.metadata = meta.MetadataList
         
-    def CreatePlaylist(self, data: {}):
+    def CreatePlaylist(self, data: dict) -> None:
         a = None
         
-    def CreateJSON(self):
+    def CreateJSON(self) -> dict:
         a = None
