@@ -31,27 +31,27 @@ class Metadata():
         
     def CreateJSON(self) -> {}:
         a = None
-        
+
 class MetadataList():
     """ Class to list metadata information in a Pandas DataFrame"""
+    
     def __init__(self) -> None:
-      self.fields= [
-        'id',
-        'danceability',
-        'energy',
-        'loudness',
-        'speechiness',
-        'acousticness'
-        'instrumentalness',
-        'liveness',
-        'valence',
-        'tempo',
-        'duration_ms',
-      ]
+        self.fields = [
+            'id',
+            'danceability',
+            'energy',
+            'loudness',
+            'speechiness',
+            'acousticness'
+            'instrumentalness',
+            'liveness',
+            'valence',
+            'tempo',
+            'duration_ms',
+        ]
 
-    self.metadataFrame = pd.DataFrame(columns=self.fields)
+        self.metadataFrame = pd.DataFrame(columns=self.fields)
 
-        
     def Add(self, meta: Metadata) -> None:
         self.metadataFrame = self.metadataFrame.append(
             pd.Series([
@@ -67,36 +67,40 @@ class MetadataList():
                 meta.duration_ms
             ], index=self.fields)
         )
-        
+
     def Get(self, index: int) -> tuple(Metadata, err.Error):
         if index < 0:
             return Metadata(), err.Error('Invalid index')
-        
+
         if index >= len(list(self.metadataFrame.index)):
             return Metadata(), err.Error('Null list or length smaller than the index requested')
-        
+
         row = self.metadataFrame.iloc[index]
-        meta = Metadata.CreateMetadata(dict(row))
-        
+        meta = Metadata()
+        meta.CreateMetadata(dict(row))
+
         return meta, None
-    
-    def GetByMusicID(self, id: int) -> tuple(Metadata, err.Error):
-        indexes = self.metadataFrame.index[self.metadataFrame['id'] == id].tolist()
+
+    def GetByMusicID(self, music_id: int) -> tuple(Metadata, err.Error):
+        indexes = self.metadataFrame.index[self.metadataFrame['id'] == music_id].tolist()
 
         if len(indexes) <= 0:
             return Metadata(), err.Error('Music metadata was not found')
-            
+
         return self.Get(indexes[0])
-        
+
     def Len(self) -> int:
         return len(list(self.metadataFrame.index))
-    
+
     def GetMedia(self) -> tuple(Metadata, err.Error):
         if len(list(self.metadataFrame.index)) == 0:
             return None, err.Error('Null list')
-        
+
         # Fazer sistema de rankeamento, pegar o TIPO da musica
         # Desvio Padrão
+        
+        # Da para fazer um loop entre os fields e para cada um fazer esse mesmo comando
+        # E ai no final também é possível mandar os dados para a função metadata.CreateMetadata()
         metadata = Metadata()
         metadata.danceability = float("{:.3f}".format(statistics.fmean(self.metadataFrame['danceability'].tolist())))
         metadata.energy = float("{:.3f}".format(statistics.fmean(self.metadataFrame['energy'].tolist())))

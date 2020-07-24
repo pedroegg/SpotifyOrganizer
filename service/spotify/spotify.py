@@ -37,10 +37,10 @@ def getUserName(token: str) -> tuple(str, err.Error):
     r.close()
 
     if r.status_code != 200:
-        print('An error ocurred trying to get the user info.\nError: {}'.format(data['error']))
-        return None
+        error = err.Error('An error ocurred trying to get the user info.\nError: {}'.format(data['error']))
+        return '', error
     
-    return str(data['display_name'])
+    return str(data['display_name']), None
 
 def getTrackMetaData(token: str, track_id: str) -> tuple(meta.Metadata, err.Error):
     url = "https://api.spotify.com/v1/audio-features/{}".format(str(track_id))
@@ -76,8 +76,10 @@ def addMusicToPlaylists(token: str, music: {}, music_genres: [], playlists: []) 
         r.close()
 
         if r.status_code != 201:
-            print('An error ocurred trying to add one track in a playlist.\nError: {}\nPlaylistID: {}' \
-                "\nMusic: {}".format(data['error'], playlist['id'], music['name']))
+            error = err.Error('An error ocurred trying to add one track in a playlist.\nError: {} \
+                \nPlaylistID: {} \nMusic: {}'.format(data['error'], playlist['id'], music['name']))
+            
+            return error
             
 def getArtist(token: str, artistID: str) -> tuple(model.Artist, err.Error):
     url = "https://api.spotify.com/v1/artists/{}".format(artistID)
