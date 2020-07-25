@@ -45,7 +45,10 @@ class Playlist():
         self.topGenres = []
         self.metadata = meta.MetadataList
         
-    def CreatePlaylist(self, data: dict) -> None:
+    def CreatePlaylistFromJSON(self, data: dict) -> None:
+        a = None
+        
+    def CreatePlaylistFromFile(self, data: dict) -> None:
         a = None
         
     def CreateJSON(self) -> dict:

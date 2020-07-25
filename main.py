@@ -40,15 +40,6 @@ limitDate = datetime.date(today.year, today.month, today.day - int(sys.argv[1]))
 # Fazer uma maneira mais facil de editar o json
 # Fazer parametro para varredura de playlists com apenas playlists selecionadas. Poupar tempo e cust
 
-def organizeLikedMusics(token):
-    print("Collecting recently saved musics and adding to playlists... Please, wait.")
-    
-    # playlists_data, error = classifyMusicPlaylistsByTop3Genre(track.genres)
-    # if (error is not None) or (playlists_data is None):
-            
-    # addMusicToPlaylists(token, music['track'], music_genres, playlists)
-    # music_genres = []
-
 def getUserPlaylistsGenres(token, name):
     playlists_data = {}
     playlists_data['playlists'] = []
