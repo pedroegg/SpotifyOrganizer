@@ -1,7 +1,7 @@
 import service.spotify.spotify as spotify
 import lib.spotify.spotifyUtils as lib
 import lib.metadata.metadataUtils as metaUtil
-import model.metadata.metadata as meta
+import model.spotify.spotify as model
 import requests as req
 
 def generateCSV(token: str, playlistId: int) -> None:
@@ -76,37 +76,30 @@ def testAddMusics(token: str, playlistID: int) -> None:
     if error is not None:
         print(error.Message)
         return
+    
+    playlist = model.Playlist()
         
-    for playlist in data['playlists']:
-        if playlist['id'] == playlistID:
-            for x in range(0, len(test_musics), 1):
-                print("Testing Music[{}]. Novos DP's:".format(x))
-                
-                metadata, error = spotify.getTrackMetaData(token, test_musics[x]['musicID'])
-                if error is not None:
-                    print(error.Message)
-                    continue
-                
-                dp = meta.Metadata()
-                dp.danceability = metaUtil.recalculateDP(playlist['metadata']['danceability']['data'], metadata.danceability)
-                dp.energy = metaUtil.recalculateDP(playlist['metadata']['energy']['data'], metadata.energy)
-                dp.loudness = metaUtil.recalculateDP(playlist['metadata']['loudness']['data'], metadata.loudness)
-                dp.speechiness = metaUtil.recalculateDP(playlist['metadata']['speechiness']['data'], metadata.speechiness)
-                dp.acousticness = metaUtil.recalculateDP(playlist['metadata']['acousticness']['data'], metadata.acousticness)
-                dp.instrumentalness = metaUtil.recalculateDP(playlist['metadata']['instrumentalness']['data'], metadata.instrumentalness)
-                dp.liveness = metaUtil.recalculateDP(playlist['metadata']['liveness']['data'], metadata.liveness)
-                dp.valence = metaUtil.recalculateDP(playlist['metadata']['valence']['data'], metadata.valence)
-                dp.tempo = metaUtil.recalculateDP(playlist['metadata']['tempo']['data'], metadata.tempo)
-                dp.duration_ms = metaUtil.recalculateDP(playlist['metadata']['duration_ms']['data'], metadata.duration_ms)
-                
-                print('danceability: {} --> variou {}'.format(dp.danceability, float("{:.4f}".format(abs(dp.danceability - playlist['metadata']['danceability']['dp'])))))
-                print('energy: {} --> variou {}'.format(dp.energy, float("{:.4f}".format(abs(dp.energy - playlist['metadata']['energy']['dp'])))))
-                print('loudness: {} --> variou {}'.format(dp.loudness, float("{:.4f}".format(abs(dp.loudness - playlist['metadata']['loudness']['dp'])))))
-                print('speechiness: {} --> variou {}'.format(dp.speechiness, float("{:.4f}".format(abs(dp.speechiness - playlist['metadata']['speechiness']['dp'])))))
-                print('acousticness: {} --> variou {}'.format(dp.acousticness, float("{:.4f}".format(abs(dp.acousticness - playlist['metadata']['acousticness']['dp'])))))
-                print('instrumentalness: {} --> variou {}'.format(dp.instrumentalness, float("{:.4f}".format(abs(dp.instrumentalness - playlist['metadata']['instrumentalness']['dp'])))))
-                print('liveness: {} --> variou {}'.format(dp.liveness, float("{:.4f}".format(abs(dp.liveness - playlist['metadata']['liveness']['dp'])))))
-                print('valence: {} --> variou {}'.format(dp.valence, float("{:.4f}".format(abs(dp.valence - playlist['metadata']['valence']['dp'])))))
-                print('tempo: {} --> variou {}'.format(dp.tempo, float("{:.4f}".format(abs(dp.tempo - playlist['metadata']['tempo']['dp'])))))
-                print('duration_ms: {} --> variou {}'.format(dp.duration_ms, float("{:.4f}".format(abs(dp.duration_ms - playlist['metadata']['duration_ms']['dp'])))))
-                print('ERA PARA ADICIONAR? {}\n'.format(test_musics[x]['include']))
+    for playlist_data in data['playlists']:
+        if playlist_data['id'] == playlistID:
+            playlist.CreatePlaylistFromFileData(playlist_data)
+            break
+        
+    if playlist.id == None or playlist.id == 0:
+        print('Playlist not found.')
+        return
+    
+    for x in range(0, len(test_musics), 1):
+        print("Testing Music[{}]. Novos DP's:".format(x))
+        
+        metadata, error = spotify.getTrackMetaData(token, test_musics[x]['musicID'])
+        if error is not None:
+            print(error.Message)
+            continue
+        
+        track_meta = metadata.CreateJSON()
+        
+        for column in playlist.metadata.fields[1:]:
+            dp = metaUtil.recalculateDP(playlist.metadata.GetColumnValues(column), track_meta[column])
+            print('{}: {} --> varied {}'.format(column, dp, float("{:.4f}".format(abs(dp - playlist.metadata.GetColumnDP(column))))))
+        
+        print('WAS IT SUPPOSED TO BE ADDED? {}\n'.format(test_musics[x]['include']))

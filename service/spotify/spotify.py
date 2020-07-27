@@ -1,5 +1,7 @@
 from selenium import webdriver
 from urllib.parse import urlparse
+from typing import Tuple
+from typing import List
 import time
 import lib.spotify.spotifyUtils as lib
 import model.metadata.metadata as meta
@@ -10,7 +12,7 @@ import datetime
 import requests as req
 import progressbar
 
-def getSpotifyToken() -> str:
+def getToken() -> str:
     url = "https://accounts.spotify.com/authorize?client_id={}&response_type=token&redirect_uri={}" \
         "&scope=user-read-private playlist-read-private user-library-read " \
         "playlist-read-collaborative playlist-modify-public playlist-modify-private" \
@@ -32,7 +34,7 @@ def getSpotifyToken() -> str:
     driver.close()
     return token
 
-def getUserName(token: str) -> tuple(str, err.Error):
+def getUserName(token: str) -> Tuple[str, err.Error]:
     url = "https://api.spotify.com/v1/me"
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
     data = r.json()
@@ -44,7 +46,7 @@ def getUserName(token: str) -> tuple(str, err.Error):
     
     return str(data['display_name']), None
 
-def getTrackMetaData(token: str, track_id: str) -> tuple(meta.Metadata, err.Error):
+def getTrackMetaData(token: str, track_id: str) -> Tuple[meta.Metadata, err.Error]:
     url = "https://api.spotify.com/v1/audio-features/{}".format(str(track_id))
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
     data = r.json()
@@ -62,17 +64,17 @@ def getTrackMetaData(token: str, track_id: str) -> tuple(meta.Metadata, err.Erro
 
     return metadata, None
 
-def addMusicToPlaylists(token: str, track: model.Track, playlists: list) -> err.Error:
+def addMusicToPlaylists(token: str, track: model.Track, playlists: List[model.Playlist]) -> None:
     # Reduzir o numero de requests para adicionar a playlist
     # Fazer adicionar varias musicas para a mesma playlist por vez
     # E nao em varias playlists cada musica
     # VERIFICAR E ARRUMAR DUPLICATA
-    for playlist in playlists['playlists']:
-        url = "https://api.spotify.com/v1/playlists/{}/tracks?uris={}".format(playlist['id'], track.uri)
+    for playlist in playlists:
+        url = "https://api.spotify.com/v1/playlists/{}/tracks?uris={}".format(playlist.id, track.uri)
         
         print("Music {} {} matched with {} {} in genre {}" \
-                    .format(track.name, track.genres, playlist['name'], \
-                        playlist['topGenres'], playlist['matchedGenre']), end='\n\n')
+                    .format(track.name, track.genres, playlist.name, \
+                        playlist.topGenres, playlist.matchedGenre), end='\n\n')
         
         r = req.post(url=url, headers={'Authorization':'Bearer ' + token})
         data = r.json()
@@ -80,11 +82,12 @@ def addMusicToPlaylists(token: str, track: model.Track, playlists: list) -> err.
 
         if r.status_code != 201:
             error = err.Error('An error ocurred trying to add one track in a playlist.\nError: {} \
-                \nPlaylistID: {} \nMusic: {}'.format(data['error'], playlist['id'], track.name))
+                \nPlaylistID: {} \nMusic: {}'.format(data['error'], playlist.id, track.name))
             
-            return error
+            print(error.Message)
             
-def getArtist(token: str, artistID: str) -> tuple(model.Artist, err.Error):
+            
+def getArtist(token: str, artistID: str) -> Tuple[model.Artist, err.Error]:
     url = "https://api.spotify.com/v1/artists/{}".format(artistID)
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
     data = r.json()
@@ -102,7 +105,7 @@ def getArtist(token: str, artistID: str) -> tuple(model.Artist, err.Error):
     
     return artist, None
 
-def getLikedMusicsByRangeURL(token: str, limitDate: datetime.date, url: str) -> tuple(list, str, err.Error):
+def getLikedMusicsByRangeURL(token: str, limitDate: datetime.date, url: str) -> Tuple[List[model.Track], str, err.Error]:
     tracks = []
     
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
@@ -136,22 +139,42 @@ def getLikedMusicsByRangeURL(token: str, limitDate: datetime.date, url: str) -> 
         
     return tracks, data['next'], None
 
-def getLikedMusics(token: str, limitDate: datetime.date) -> tuple(list, err.Error):
+def getLikedMusics(token: str, limitDate: datetime.date) -> Tuple[List[model.Track], err.Error]:
     url = "https://api.spotify.com/v1/me/tracks?offset=0&limit=50"
     tracks = []
     
-    segment_tracks, next_field, error = getLikedMusicsByRangeURL(token, limitDate, url)
+    tracks_segment, next_field, error = getLikedMusicsByRangeURL(token, limitDate, url)
     while error is None:
-        tracks.extend(segment_tracks)
+        tracks.extend(tracks_segment)
         
         if next_field is None:
             break
             
-        segment_tracks, next_field, error = getLikedMusicsByRangeURL(token, limitDate, next_field)
+        tracks_segment, next_field, error = getLikedMusicsByRangeURL(token, limitDate, next_field)
 
     return tracks, error
 
-def getUserPlaylistsByRangeURL(token: str, name: str, count: int, bar: progressbar.ProgressBar, url: str) -> tuple(list, int, str, err.Error):
+def getPlaylist(token: str, playlist_id: str) -> Tuple[model.Playlist, err.Error]:
+    fields = "id,name,tracks(items(track(artists(id),id,name,uri)))"
+    url = "https://api.spotify.com/v1/playlists/{}?fields={}".format(playlist_id, fields)
+    
+    r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
+    data = r.json()
+    r.close()
+    
+    playlist = model.Playlist()
+    
+    if r.status_code != 200:
+        error = err.Error('An error ocurred trying to get a playlist.\nError: {}\nPlaylistID: {}' \
+            .format(data['error'], playlist_id))
+        
+        return playlist, error
+    
+    playlist.CreatePlaylistFromJSON(token, data)
+    
+    return playlist, None
+
+def getUserPlaylistsByRangeURL(token: str, name: str, count: int, bar: progressbar.ProgressBar, url: str) -> Tuple[List[model.Playlist], int, str, err.Error]:
     playlists = []
     
     r = req.get(url=url, headers={'Authorization':'Bearer ' + token})
@@ -163,32 +186,21 @@ def getUserPlaylistsByRangeURL(token: str, name: str, count: int, bar: progressb
         error = err.Error('An error ocurred trying to get the user playlists.\nError: {}\nURL: {}' \
             .format(data['error'], url))
         
-        return playlists, None, count, error
+        return playlists, count, None, error
     
     total = data['total']
     plus_percentage = total/100
     
-    playlists_data = data['items']
-    for playlist_data in playlists_data:
+    for playlist_data in data['items']:
         if playlist_data['owner']['display_name'] == name:
             # sys.stderr.write("Playlist: {}".format(playlist['name']) + '\r')
             # sys.stderr.flush()
             # Fazer o print da playlist atual também
-            playlist = model.Playlist()
+            playlist, error = getPlaylist(token, playlist_data['id'])
+            if error is not None:
+                continue
             
-            playlist.CreatePlaylistFromJSON(playlist_data)
-            
-            """
-            genres, top3genres, metadatas = getPlaylistGenres(token, str(playlist['id']))
-            dp_metadata = getMetadataDP(metadatas)
-            playlists_data['playlists'].append({
-                'name': str(playlist['name']),
-                'id': str(playlist['id']),
-                'genres': genres,
-                'topGenres': top3genres,
-                'metadata': dp_metadata
-            })
-            """
+            playlists.append(playlist)
             
         count += plus_percentage
         try:
@@ -198,5 +210,30 @@ def getUserPlaylistsByRangeURL(token: str, name: str, count: int, bar: progressb
     
     return playlists, count, data['next'], None
 
-def getUserPlaylists(token: str) -> list(model.Playlist):
-    a = None
+def getUserPlaylists(token: str) -> Tuple[List[model.Playlist], err.Error]:
+    playlists = []
+    
+    username, error = getUserName(token)
+    if error is not None:
+        return playlists, error
+    
+    url = "https://api.spotify.com/v1/me/playlists?limit=50&offset=0"
+    
+    bar = progressbar.ProgressBar(maxval=100, widgets=[progressbar.Bar('=', '[', ']'), ' ', \
+        progressbar.Percentage()])
+    bar.start()
+    
+    playlists_segment, count, next_field, error = getUserPlaylistsByRangeURL(token, \
+        username, 0, bar, url)
+    while error is None:
+        playlists.extend(playlists_segment)
+        
+        if next_field is None:
+            break
+        
+        playlists_segment, count, next_field, error = getUserPlaylistsByRangeURL(token, \
+            username, count, bar, next_field)
+    
+    bar.finish()
+    
+    return playlists, error

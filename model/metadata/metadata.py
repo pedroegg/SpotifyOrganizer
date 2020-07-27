@@ -1,10 +1,12 @@
 import model.error.err as err
+from typing import Tuple
+from typing import List
 import statistics
 import pandas as pd
 
 class Metadata():
     def __init__(self):
-        self.id = int
+        self.id = str
         self.danceability = float
         self.energy = float
         self.loudness = float
@@ -16,7 +18,7 @@ class Metadata():
         self.tempo = float
         self.duration_ms = float
 
-    def CreateMetadata(self, data: dict):
+    def CreateMetadata(self, data: dict) -> None:
         self.id = data['id']
         self.danceability = float("{:.3f}".format(data['danceability']))
         self.energy = float("{:.3f}".format(data['energy']))
@@ -32,6 +34,7 @@ class Metadata():
     def CreateJSON(self) -> dict:
         metadata = {}
         metadata['id'] = self.id
+        metadata['danceability'] = self.danceability
         metadata['energy'] = self.energy
         metadata['loudness'] = self.loudness
         metadata['speechiness'] = self.speechiness
@@ -47,16 +50,16 @@ class Metadata():
 class MetadataList():
     """ Class to list metadata information in a Pandas DataFrame"""
     
-    def __init__(self) -> None:
+    def __init__(self):
         self.fields = [
             'id',
             'danceability',
             'energy',
-            'loudness',
             'speechiness',
-            'acousticness'
+            'acousticness',
             'instrumentalness',
             'liveness',
+            'loudness',
             'valence',
             'tempo',
             'duration_ms',
@@ -74,13 +77,14 @@ class MetadataList():
                 meta.acousticness,
                 meta.instrumentalness,
                 meta.liveness,
+                meta.loudness,
                 meta.valence,
                 meta.tempo,
                 meta.duration_ms
             ], index=self.fields)
-        )
+        , ignore_index=True)
 
-    def Get(self, index: int) -> tuple(Metadata, err.Error):
+    def GetMetadataByIndex(self, index: int) -> Tuple[Metadata, err.Error]:
         if index < 0:
             return Metadata(), err.Error('Invalid index')
 
@@ -92,19 +96,28 @@ class MetadataList():
         meta.CreateMetadata(dict(row))
 
         return meta, None
+    
+    def GetColumnValues(self, column: str) -> Tuple[list, err.Error]:
+        if len(list(self.metadataFrame.index)) == 0:
+            return None, err.Error('Null list')
+        
+        return self.metadataFrame[column].tolist()
 
-    def GetByMusicID(self, music_id: int) -> tuple(Metadata, err.Error):
-        indexes = self.metadataFrame.index[self.metadataFrame['id'] == music_id].tolist()
+    def GetByTrackID(self, track_id: int) -> Tuple[Metadata, err.Error]:
+        indexes = self.metadataFrame.index[self.metadataFrame['id'] == track_id].tolist()
 
         if len(indexes) <= 0:
             return Metadata(), err.Error('Music metadata was not found')
 
-        return self.Get(indexes[0])
+        return self.GetMetadataByIndex(indexes[0])
 
     def Len(self) -> int:
         return len(list(self.metadataFrame.index))
+    
+    def CheckEmpty(self) -> bool:
+        return self.Len() == 0
 
-    def GetMedia(self) -> tuple(Metadata, err.Error):
+    def GetMean(self) -> Tuple[Metadata, err.Error]:
         if len(list(self.metadataFrame.index)) == 0:
             return None, err.Error('Null list')
 
@@ -114,20 +127,20 @@ class MetadataList():
         # Da para fazer um loop entre os fields e para cada um fazer esse mesmo comando
         # E ai no final também é possível mandar os dados para a função metadata.CreateMetadata()
         metadata = Metadata()
-        metadata.danceability = float("{:.3f}".format(statistics.fmean(self.metadataFrame['danceability'].tolist())))
-        metadata.energy = float("{:.3f}".format(statistics.fmean(self.metadataFrame['energy'].tolist())))
-        metadata.loudness = float("{:.3f}".format(statistics.fmean(self.metadataFrame['loudness'].tolist())))
-        metadata.speechiness = float("{:.3f}".format(statistics.fmean(self.metadataFrame['speechiness'].tolist())))
-        metadata.acousticness = float("{:.3f}".format(statistics.fmean(self.metadataFrame['acousticness'].tolist())))
-        metadata.instrumentalness = float("{:.3f}".format(statistics.fmean(self.metadataFrame['instrumentalness'].tolist())))
-        metadata.liveness = float("{:.3f}".format(statistics.fmean(self.metadataFrame['liveness'].tolist())))
-        metadata.valence = float("{:.3f}".format(statistics.fmean(self.metadataFrame['valence'].tolist())))
-        metadata.tempo = float("{:.3f}".format(statistics.fmean(self.metadataFrame['tempo'].tolist())))
-        metadata.duration_ms = float("{:.3f}".format(statistics.fmean(self.metadataFrame['duration_ms'].tolist())))
+        metadata.danceability = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('danceability'))))
+        metadata.energy = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('energy'))))
+        metadata.loudness = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('loudness'))))
+        metadata.speechiness = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('speechiness'))))
+        metadata.acousticness = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('acousticness'))))
+        metadata.instrumentalness = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('instrumentalness'))))
+        metadata.liveness = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('liveness'))))
+        metadata.valence = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('valence'))))
+        metadata.tempo = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('tempo'))))
+        metadata.duration_ms = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('duration_ms'))))
         
         return metadata, None
     
-    def getDP(self) -> tuple(Metadata, err.Error):
+    def getDP(self) -> Tuple[Metadata, err.Error]:
         if len(list(self.metadataFrame.index)) == 0:
             return None, err.Error('Null list')
         
@@ -135,18 +148,71 @@ class MetadataList():
         # Desvio Padrão
         
         metadata = Metadata()
-        metadata.danceability = float("{:.3f}".format(statistics.pstdev(self.metadataFrame['danceability'].tolist())))
-        metadata.energy = float("{:.3f}".format(statistics.pstdev(self.metadataFrame['energy'].tolist())))
-        metadata.loudness = float("{:.3f}".format(statistics.pstdev(self.metadataFrame['loudness'].tolist())))
-        metadata.speechiness = float("{:.3f}".format(statistics.pstdev(self.metadataFrame['speechiness'].tolist())))
-        metadata.acousticness = float("{:.3f}".format(statistics.pstdev(self.metadataFrame['acousticness'].tolist())))
-        metadata.instrumentalness = float("{:.3f}".format(statistics.pstdev(self.metadataFrame['instrumentalness'].tolist())))
-        metadata.liveness = float("{:.3f}".format(statistics.pstdev(self.metadataFrame['liveness'].tolist())))
-        metadata.valence = float("{:.3f}".format(statistics.pstdev(self.metadataFrame['valence'].tolist())))
-        metadata.tempo = float("{:.3f}".format(statistics.pstdev(self.metadataFrame['tempo'].tolist())))
-        metadata.duration_ms = float("{:.3f}".format(statistics.pstdev(self.metadataFrame['duration_ms'].tolist())))
+        metadata.danceability = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('danceability'))))
+        metadata.energy = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('energy'))))
+        metadata.loudness = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('loudness'))))
+        metadata.speechiness = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('speechiness'))))
+        metadata.acousticness = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('acousticness'))))
+        metadata.instrumentalness = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('instrumentalness'))))
+        metadata.liveness = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('liveness'))))
+        metadata.valence = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('valence'))))
+        metadata.tempo = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('tempo'))))
+        metadata.duration_ms = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('duration_ms'))))
         
         return metadata, None
     
+    def GetColumnMean(self, column: str) -> Tuple[list, err.Error]:
+        if len(list(self.metadataFrame.index)) == 0:
+            return None, err.Error('Null list')
+        
+        return float("{:.3f}".format(statistics.fmean(self.GetColumnValues(column))))
+    
+    def GetColumnDP(self, column: str) -> Tuple[list, err.Error]:
+        if len(list(self.metadataFrame.index)) == 0:
+            return None, err.Error('Null list')
+        
+        return float("{:.3f}".format(statistics.pstdev(self.GetColumnValues(column))))
+    
     def Sort(self, field: str) -> None:
         return list(self.metadataFrame[field].sort_values(ascending=True, kind='quicksort'))
+    
+    def CreateJSONByList(self) -> dict:
+        metadata = {}
+        
+        if self.CheckEmpty():
+            return metadata
+        
+        for column in self.fields[:1]:
+            dp, _ = self.GetColumnDP(column)
+            data, _ = self.GetColumnValues(column)
+            metadata[column]['data'] = data
+            metadata[column]['dp'] = dp
+        
+        return metadata
+    
+    def CreateJSONByRegister(self) -> dict:
+        metadatas = []
+        
+        if self.CheckEmpty():
+            return metadatas
+        
+        for ind in self.metadataFrame.index:
+            metadata = {}
+            
+            for column in self.fields:
+                metadata[column] = self.metadataFrame[column][ind]
+                
+            metadatas.append(metadata)
+        
+        return metadatas
+    
+    def CreateFromFileDataByList(self, data: dict) -> None:
+        a = None
+        return a
+    
+    def CreateFromFileDataByRegister(self, data: List[dict]) -> None:
+        for meta_data in data:
+            metadata = Metadata()
+            metadata.CreateMetadata(meta_data)
+            
+            self.Add(metadata)
