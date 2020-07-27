@@ -20,9 +20,7 @@ class Track():
             self.artists.append(artist)
             
             if error is None:
-                for genre in artist.genres:
-                    if genre not in self.genres:
-                        self.genres.append(genre)
+                self.genres.extend(x for x in artist.genres if x not in self.genres)
         
         self.metadata, _ = service.getTrackMetaData(token, self.id)
         
