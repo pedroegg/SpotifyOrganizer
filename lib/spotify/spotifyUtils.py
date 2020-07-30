@@ -34,8 +34,8 @@ def classifyMusicPlaylistsByGenre(genre_list: List[str]) -> Tuple[List[model.Pla
     for playlist_data in data['playlists']:
         playlist = model.Playlist()
         playlist.CreatePlaylistFromFileData(playlist_data)
-        for top_genre in playlist.topGenres:
-            if top_genre in genre_list:
+        for genre in playlist.genres:
+            if genre in genre_list:
                 selected_playlists.append(playlist)
                 break
             
