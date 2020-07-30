@@ -1,0 +1,7 @@
+data/*.txt
+data/*.csv
+data/*.json
+env.py
+__pycache__/
+*.py[cod]
+*$py.class
