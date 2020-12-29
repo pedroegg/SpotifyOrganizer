@@ -29,7 +29,7 @@ updatePlaylistsJSON = bool(int(sys.argv[2]))
 limitDate = datetime.date(today.year, today.month, today.day - int(sys.argv[1]))
    
 def main():
-    chromedriver_autoinstaller.install() # If de chrome doesn't appear, comment this line
+    chromedriver_autoinstaller.install() # If chrome doesn't appear, comment this line
     token = spotify.getToken()
     if token != "":
         if (not lib.checkExistencePlaylistsFile()) or (updatePlaylistsJSON):
@@ -39,9 +39,9 @@ def main():
         
         # test.generateCSV(token, '4Uz5RgDqU35EIbjykAhamm') # didn't tested it again
         # test.testAddMusics(token, '5I6Xwr1APbaJWJlaiWEbXS')
-        error = lib.organizeLikedMusics(token, limitDate)
+        """error = lib.organizeLikedMusics(token, limitDate)
         if error is not None:
-            print(error)
+            print(error.Message)"""
     
 if __name__ == "__main__":
     main()

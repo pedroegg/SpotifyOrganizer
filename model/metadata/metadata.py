@@ -176,21 +176,7 @@ class MetadataList():
     def Sort(self, field: str) -> None:
         return list(self.metadataFrame[field].sort_values(ascending=True, kind='quicksort'))
     
-    def CreateJSONByList(self) -> dict:
-        metadata = {}
-        
-        if self.CheckEmpty():
-            return metadata
-        
-        for column in self.fields[:1]:
-            dp, _ = self.GetColumnDP(column)
-            data, _ = self.GetColumnValues(column)
-            metadata[column]['data'] = data
-            metadata[column]['dp'] = dp
-        
-        return metadata
-    
-    def CreateJSONByRegister(self) -> dict:
+    def CreateJSON(self) -> dict:
         metadatas = []
         
         if self.CheckEmpty():
@@ -206,11 +192,7 @@ class MetadataList():
         
         return metadatas
     
-    def CreateFromFileDataByList(self, data: dict) -> None:
-        a = None
-        return a
-    
-    def CreateFromFileDataByRegister(self, data: List[dict]) -> None:
+    def CreateFromFileData(self, data: List[dict]) -> None:
         for meta_data in data:
             metadata = Metadata()
             metadata.CreateMetadata(meta_data)
