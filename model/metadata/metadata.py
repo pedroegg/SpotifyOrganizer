@@ -4,6 +4,16 @@ from typing import List
 import statistics
 import pandas as pd
 
+class AttributeRanges():
+    def __init__(self):
+        self.name = str
+        self.interval = Range()
+
+class Range():
+    def __init__(self):
+        self.init = float
+        self.final = float
+
 class Metadata():
     def __init__(self):
         self.id = str
@@ -98,10 +108,10 @@ class MetadataList():
         return meta, None
     
     def GetColumnValues(self, column: str) -> Tuple[list, err.Error]:
-        if len(list(self.metadataFrame.index)) == 0:
+        if self.CheckEmpty():
             return None, err.Error('Null list')
         
-        return self.metadataFrame[column].tolist()
+        return self.metadataFrame[column].tolist(), None
 
     def GetByTrackID(self, track_id: int) -> Tuple[Metadata, err.Error]:
         indexes = self.metadataFrame.index[self.metadataFrame['id'] == track_id].tolist()
@@ -109,7 +119,7 @@ class MetadataList():
         if len(indexes) <= 0:
             return Metadata(), err.Error('Music metadata was not found')
 
-        return self.GetMetadataByIndex(indexes[0])
+        return self.GetMetadataByIndex(indexes[0]), None
 
     def Len(self) -> int:
         return len(list(self.metadataFrame.index))
@@ -118,7 +128,7 @@ class MetadataList():
         return self.Len() == 0
 
     def GetMean(self) -> Tuple[Metadata, err.Error]:
-        if len(list(self.metadataFrame.index)) == 0:
+        if self.CheckEmpty():
             return None, err.Error('Null list')
 
         # Fazer sistema de rankeamento, pegar o TIPO da musica
@@ -141,7 +151,7 @@ class MetadataList():
         return metadata, None
     
     def getDP(self) -> Tuple[Metadata, err.Error]:
-        if len(list(self.metadataFrame.index)) == 0:
+        if self.CheckEmpty():
             return None, err.Error('Null list')
         
         # Fazer sistema de rankeamento, pegar o TIPO da musica
@@ -162,13 +172,13 @@ class MetadataList():
         return metadata, None
     
     def GetColumnMean(self, column: str) -> Tuple[list, err.Error]:
-        if len(list(self.metadataFrame.index)) == 0:
+        if self.CheckEmpty():
             return None, err.Error('Null list')
         
         return float("{:.3f}".format(statistics.fmean(self.GetColumnValues(column))))
     
     def GetColumnDP(self, column: str) -> Tuple[list, err.Error]:
-        if len(list(self.metadataFrame.index)) == 0:
+        if self.CheckEmpty():
             return None, err.Error('Null list')
         
         return float("{:.3f}".format(statistics.pstdev(self.GetColumnValues(column))))

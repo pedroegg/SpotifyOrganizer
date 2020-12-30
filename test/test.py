@@ -100,6 +100,8 @@ def testAddMusics(token: str, playlistID: int) -> None:
         
         for column in playlist.metadata.fields[1:]:
             dp = metaUtil.recalculateDP(playlist.metadata.GetColumnValues(column), track_meta[column])
-            print('{}: {} --> varied {}'.format(column, dp, float("{:.4f}".format(abs(dp - playlist.metadata.GetColumnDP(column))))))
+            columnDP, _ = playlist.metadata.GetColumnDP(column)
+
+            print('{}: {} --> varied {}'.format(column, dp, float("{:.4f}".format(abs(dp - columnDP)))))
         
         print('WAS IT SUPPOSED TO BE ADDED? {}\n'.format(test_musics[x]['include']))

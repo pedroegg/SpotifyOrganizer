@@ -3,6 +3,8 @@ from typing import Tuple
 import model.error.err as err
 import model.metadata.metadata as meta
 import service.spotify.spotify as service
+import lib.metadata.metadataUtils as metaUtil
+import random
 
 def insort_right(a: list, x: dict, lo=0, hi=None):
     """Insert item x in list a, and keep it sorted assuming a is sorted.
@@ -66,6 +68,7 @@ class Playlist():
         self.genres = []
         self.topGenres = []
         self.metadata = meta.MetadataList()
+        self.topAttributes = []
         self.matchedGenre = str
         
     def CreatePlaylistFromJSON(self, token: str, data: dict) -> None:
@@ -93,6 +96,13 @@ class Playlist():
         
         self.topGenres = sorted(genres_count, key=genres_count.get, reverse=True)[:3]
         
+        relevantAttributes, err = self.FindRelevantAttributes()
+        if err is not None:
+            self.topAttributes = None
+            return
+        
+        self.topAttributes = self.FindRangeOfTopAttributes(relevantAttributes)
+        
     def CreatePlaylistFromFileData(self, data: dict) -> None:
         self.id = data['id']
         self.name = data['name']
@@ -103,6 +113,13 @@ class Playlist():
         metadataList.CreateFromFileData(data['metadata'])
         
         self.metadata = metadataList
+
+        relevantAttributes, err = self.FindRelevantAttributes()
+        if err is not None:
+            self.topAttributes = None
+            return
+        
+        self.topAttributes = self.FindRangeOfTopAttributes(relevantAttributes)
         
     def CreateJSON(self) -> dict:
         playlist = {}
@@ -142,5 +159,36 @@ class Playlist():
             
             insort_right(topAttributes, register)
 
-        return list({reg['attribute'] for reg in topAttributes}.values())[:3]
-            
+        return list({reg['attribute'] for reg in topAttributes}.values())[:3], None
+
+    def FindRangeOfTopAttributes(self, topAttributesNames: List[str]) -> List[meta.AttributeRanges]:
+        attributesRanges = []
+        
+        for attribute in topAttributesNames:
+            values, _ = self.metadata.GetColumnValues(attribute)
+            attributeDP, _ = self.metadata.GetColumnDP(attribute)
+            randomValues = random.shuffle(values)[:(0.3 * len(values))]
+
+            dpVariations = []
+
+            for attributeValue in randomValues:
+                dp = metaUtil.recalculateDP(values, attributeValue)
+                varied = float("{:.4f}".format(abs(dp - attributeDP)))
+
+                dpVariations.append(varied)
+
+            highestDP = max(dpVariations)
+            lowestDP = min(dpVariations)
+
+            attributeRange = meta.AttributeRanges()
+            interval = meta.Range()
+
+            interval.init = lowestDP
+            interval.final = highestDP
+
+            attributeRange.name = attribute
+            attributeRange.range = interval
+
+            attributesRanges.append(attributeRange)
+
+        return attributesRanges

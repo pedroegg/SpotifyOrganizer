@@ -5,6 +5,8 @@ from typing import Tuple
 from typing import List
 import model.error.err as err
 import model.spotify.spotify as model
+import model.metadata.metadata as metaModel
+import lib.metadata.metadataUtils as metaUtil
 import service.spotify.spotify as service
 
 def getTokenFromURL(url: str) -> str:
@@ -59,8 +61,39 @@ def classifyMusicPlaylistsByTop3Genre(genre_list: List[str]) -> Tuple[List[model
             
     return selected_playlists, None
 
-def classifyMusicPlaylistsByMetadadata(genre_list: List[str]) -> Tuple[List[model.Playlist], err.Error]:
-    abc = None
+def classifyMusicPlaylistsByMetadata(music_metadata: metaModel.Metadata) -> Tuple[List[model.Playlist], err.Error]:
+    selected_playlists = []
+    
+    data, error = getDataFromPlaylistsFile()
+    if error is not None:
+        return selected_playlists, error
+        
+    for playlist_data in data['playlists']:
+        playlist = model.Playlist()
+        playlist.CreatePlaylistFromFileData(playlist_data)
+
+        track_meta = music_metadata.CreateJSON()
+        ok = True
+
+        if playlist.metadata.CheckEmpty():
+            continue
+
+        for attribute in playlist.topAttributes:
+            values, _ = playlist.metadata.GetColumnValues(attribute.name)
+            attributeDP, _ = playlist.metadata.GetColumnDP(attribute)
+
+            dp = metaUtil.recalculateDP(values, track_meta[attribute.name])
+            varied = float("{:.4f}".format(abs(dp - attributeDP)))
+
+            if not (attribute.interval.init <= varied <= attribute.interval.final):
+                ok = False
+                break
+
+        if ok:
+            selected_playlists.append(playlist)
+            break
+            
+    return selected_playlists, None
 
 def organizeLikedMusics(token: str, limitDate: datetime.date) -> err.Error:
     print("Collecting recently saved musics and adding to playlists... Please, wait.")
