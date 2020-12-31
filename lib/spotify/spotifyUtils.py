@@ -80,12 +80,15 @@ def classifyMusicPlaylistsByMetadata(music_metadata: metaModel.Metadata) -> Tupl
 
         for attribute in playlist.topAttributes:
             values, _ = playlist.metadata.GetColumnValues(attribute.name)
-            attributeDP, _ = playlist.metadata.GetColumnDP(attribute)
+            attributeDP = playlist.metadata.GetColumnDpUsingValues(values)
 
             dp = metaUtil.recalculateDP(values, track_meta[attribute.name])
             varied = float("{:.4f}".format(abs(dp - attributeDP)))
 
-            if not (attribute.interval.init <= varied <= attribute.interval.final):
+            init = attribute.interval.init
+            final = attribute.interval.final
+
+            if not (init <= varied <= final):
                 ok = False
                 break
 
@@ -103,11 +106,11 @@ def organizeLikedMusics(token: str, limitDate: datetime.date) -> err.Error:
         return error
     
     for track in tracks:
-        playlists, error = classifyMusicPlaylistsByTop3Genre(track.genres)
+        playlists, error = classifyMusicPlaylistsByMetadata(track.metadata)
         if error is not None:
             continue
         
-        service.addMusicToPlaylists(token, track, playlists)
+        service.addMusicToPlaylists(token, track, playlists, False, True)
         
 def writePlaylistJSON(token: str) -> err.Error:
     print("Updating playlists.json file and analyzing your playlists genres... Please, wait.")

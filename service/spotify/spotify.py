@@ -64,17 +64,25 @@ def getTrackMetaData(token: str, track_id: str) -> Tuple[meta.Metadata, err.Erro
 
     return metadata, None
 
-def addMusicToPlaylists(token: str, track: model.Track, playlists: List[model.Playlist]) -> None:
+def addMusicToPlaylists(token: str, track: model.Track, playlists: List[model.Playlist], withGenre: bool, withMeta: bool) -> None:
     # Reduzir o numero de requests para adicionar a playlist
     # Fazer adicionar varias musicas para a mesma playlist por vez
     # E nao em varias playlists cada musica
     # VERIFICAR E ARRUMAR DUPLICATA
     for playlist in playlists:
         url = "https://api.spotify.com/v1/playlists/{}/tracks?uris={}".format(playlist.id, track.uri)
+
+        phrase = 'in genre {}'.format(playlist.matchedGenre)
+        if withMeta:
+            attributes_phrase = ''
+            for attribute in playlist.topAttributes:
+                attributes_phrase += '{} -> {} to {}\n'.format(attribute.name, attribute.interval.init, attribute.interval.final)
+            
+            phrase = 'with top attributes: \n{}'.format(attributes_phrase)
         
-        print("Music {} {} matched with {} {} in genre {}" \
+        print("Music {} {} matched with {} {} {}" \
                     .format(track.name, track.genres, playlist.name, \
-                        playlist.topGenres, playlist.matchedGenre), end='\n\n')
+                        playlist.topGenres, phrase), end='\n\n')
         
         r = req.post(url=url, headers={'Authorization':'Bearer ' + token})
         data = r.json()

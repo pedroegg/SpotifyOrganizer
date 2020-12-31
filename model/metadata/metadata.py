@@ -136,17 +136,28 @@ class MetadataList():
         
         # Da para fazer um loop entre os fields e para cada um fazer esse mesmo comando
         # E ai no final também é possível mandar os dados para a função metadata.CreateMetadata()
+        danceabilityValues, _ = self.GetColumnValues('danceability')
+        energyValues, _ = self.GetColumnValues('energy')
+        loudnessValues, _ = self.GetColumnValues('loudness')
+        speechinessValues, _ = self.GetColumnValues('speechiness')
+        acousticnessValues, _ = self.GetColumnValues('acousticness')
+        instrumentalnessValues, _ = self.GetColumnValues('instrumentalness')
+        livenessValues, _ = self.GetColumnValues('liveness')
+        valenceValues, _ = self.GetColumnValues('valence')
+        tempoValues, _ = self.GetColumnValues('tempo')
+        duration_msValues, _ = self.GetColumnValues('duration_ms')
+
         metadata = Metadata()
-        metadata.danceability = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('danceability'))))
-        metadata.energy = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('energy'))))
-        metadata.loudness = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('loudness'))))
-        metadata.speechiness = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('speechiness'))))
-        metadata.acousticness = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('acousticness'))))
-        metadata.instrumentalness = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('instrumentalness'))))
-        metadata.liveness = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('liveness'))))
-        metadata.valence = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('valence'))))
-        metadata.tempo = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('tempo'))))
-        metadata.duration_ms = float("{:.3f}".format(statistics.fmean(self.GetColumnValues('duration_ms'))))
+        metadata.danceability = float("{:.3f}".format(statistics.fmean(danceabilityValues)))
+        metadata.energy = float("{:.3f}".format(statistics.fmean(energyValues)))
+        metadata.loudness = float("{:.3f}".format(statistics.fmean(loudnessValues)))
+        metadata.speechiness = float("{:.3f}".format(statistics.fmean(speechinessValues)))
+        metadata.acousticness = float("{:.3f}".format(statistics.fmean(acousticnessValues)))
+        metadata.instrumentalness = float("{:.3f}".format(statistics.fmean(instrumentalnessValues)))
+        metadata.liveness = float("{:.3f}".format(statistics.fmean(livenessValues)))
+        metadata.valence = float("{:.3f}".format(statistics.fmean(valenceValues)))
+        metadata.tempo = float("{:.3f}".format(statistics.fmean(tempoValues)))
+        metadata.duration_ms = float("{:.3f}".format(statistics.fmean(duration_msValues)))
         
         return metadata, None
     
@@ -156,32 +167,53 @@ class MetadataList():
         
         # Fazer sistema de rankeamento, pegar o TIPO da musica
         # Desvio Padrão
+
+        danceabilityValues, _ = self.GetColumnValues('danceability')
+        energyValues, _ = self.GetColumnValues('energy')
+        loudnessValues, _ = self.GetColumnValues('loudness')
+        speechinessValues, _ = self.GetColumnValues('speechiness')
+        acousticnessValues, _ = self.GetColumnValues('acousticness')
+        instrumentalnessValues, _ = self.GetColumnValues('instrumentalness')
+        livenessValues, _ = self.GetColumnValues('liveness')
+        valenceValues, _ = self.GetColumnValues('valence')
+        tempoValues, _ = self.GetColumnValues('tempo')
+        duration_msValues, _ = self.GetColumnValues('duration_ms')
         
         metadata = Metadata()
-        metadata.danceability = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('danceability'))))
-        metadata.energy = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('energy'))))
-        metadata.loudness = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('loudness'))))
-        metadata.speechiness = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('speechiness'))))
-        metadata.acousticness = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('acousticness'))))
-        metadata.instrumentalness = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('instrumentalness'))))
-        metadata.liveness = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('liveness'))))
-        metadata.valence = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('valence'))))
-        metadata.tempo = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('tempo'))))
-        metadata.duration_ms = float("{:.3f}".format(statistics.pstdev(self.GetColumnValues('duration_ms'))))
+        metadata.danceability = float("{:.3f}".format(statistics.pstdev(danceabilityValues)))
+        metadata.energy = float("{:.3f}".format(statistics.pstdev(energyValues)))
+        metadata.loudness = float("{:.3f}".format(statistics.pstdev(loudnessValues)))
+        metadata.speechiness = float("{:.3f}".format(statistics.pstdev(speechinessValues)))
+        metadata.acousticness = float("{:.3f}".format(statistics.pstdev(acousticnessValues)))
+        metadata.instrumentalness = float("{:.3f}".format(statistics.pstdev(instrumentalnessValues)))
+        metadata.liveness = float("{:.3f}".format(statistics.pstdev(livenessValues)))
+        metadata.valence = float("{:.3f}".format(statistics.pstdev(valenceValues)))
+        metadata.tempo = float("{:.3f}".format(statistics.pstdev(tempoValues)))
+        metadata.duration_ms = float("{:.3f}".format(statistics.pstdev(duration_msValues)))
         
         return metadata, None
     
     def GetColumnMean(self, column: str) -> Tuple[list, err.Error]:
         if self.CheckEmpty():
             return None, err.Error('Null list')
+
+        values, _ = self.GetColumnValues(column)
         
-        return float("{:.3f}".format(statistics.fmean(self.GetColumnValues(column))))
+        return float("{:.3f}".format(statistics.fmean(values))), None
     
     def GetColumnDP(self, column: str) -> Tuple[list, err.Error]:
         if self.CheckEmpty():
             return None, err.Error('Null list')
+
+        values, _ = self.GetColumnValues(column)
         
-        return float("{:.3f}".format(statistics.pstdev(self.GetColumnValues(column))))
+        return float("{:.3f}".format(statistics.pstdev(values))), None
+
+    def GetColumnMeanUsingValues(self, values: list) -> list:
+        return float("{:.3f}".format(statistics.fmean(values)))
+    
+    def GetColumnDpUsingValues(self, values: list) -> list:
+        return float("{:.3f}".format(statistics.pstdev(values)))
     
     def Sort(self, field: str) -> None:
         return list(self.metadataFrame[field].sort_values(ascending=True, kind='quicksort'))

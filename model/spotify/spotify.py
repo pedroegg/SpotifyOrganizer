@@ -139,7 +139,7 @@ class Playlist():
         if self.metadata.CheckEmpty():
             return topAttributes, err.Error('Null list')
         
-        for column in self.metadata.fields:
+        for column in self.metadata.fields[1:]:
             columnValues, _ = self.metadata.GetColumnValues(column)
             
             attributesCount[column] = {}
@@ -152,22 +152,24 @@ class Playlist():
                 else:
                     attributesCount[column][aux] = 1
                     
-        for column in self.metadata.fields:
-            topValue = sorted(attributesCount[column], key=attributesCount[column].get, reverse=True)[:1]
+        for column in self.metadata.fields[1:]:
+            topValue = sorted(attributesCount[column], key=attributesCount[column].get, reverse=True)[:1][0]
             topCount = attributesCount[column][topValue]
             register = {'attribute': column,'value': topValue,'count': topCount}
             
             insort_right(topAttributes, register)
 
-        return list({reg['attribute'] for reg in topAttributes}.values())[:3], None
+        return list({reg['attribute'] for reg in topAttributes})[:3], None
 
     def FindRangeOfTopAttributes(self, topAttributesNames: List[str]) -> List[meta.AttributeRanges]:
         attributesRanges = []
         
         for attribute in topAttributesNames:
             values, _ = self.metadata.GetColumnValues(attribute)
-            attributeDP, _ = self.metadata.GetColumnDP(attribute)
-            randomValues = random.shuffle(values)[:(0.3 * len(values))]
+            attributeDP = self.metadata.GetColumnDpUsingValues(values)
+            
+            random.shuffle(values)
+            randomValues = values[:int(0.3 * len(values))]
 
             dpVariations = []
 
@@ -187,7 +189,7 @@ class Playlist():
             interval.final = highestDP
 
             attributeRange.name = attribute
-            attributeRange.range = interval
+            attributeRange.interval = interval
 
             attributesRanges.append(attributeRange)
 

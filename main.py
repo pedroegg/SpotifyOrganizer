@@ -39,9 +39,9 @@ def main():
         
         # test.generateCSV(token, '4Uz5RgDqU35EIbjykAhamm') # didn't tested it again
         # test.testAddMusics(token, '5I6Xwr1APbaJWJlaiWEbXS')
-        """error = lib.organizeLikedMusics(token, limitDate)
+        error = lib.organizeLikedMusics(token, limitDate)
         if error is not None:
-            print(error.Message)"""
+            print(error.Message)
     
 if __name__ == "__main__":
     main()
