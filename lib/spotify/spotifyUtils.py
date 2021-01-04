@@ -98,6 +98,46 @@ def classifyMusicPlaylistsByMetadata(music_metadata: metaModel.Metadata) -> Tupl
             
     return selected_playlists, None
 
+def classifyMusicPlaylistsByGenreAndMetadata(genre_list: List[str], music_metadata: metaModel.Metadata) -> Tuple[List[model.Playlist], err.Error]:
+    selected_playlists = []
+    
+    data, error = getDataFromPlaylistsFile()
+    if error is not None:
+        return selected_playlists, error
+        
+    for playlist_data in data['playlists']:
+        playlist = model.Playlist()
+        playlist.CreatePlaylistFromFileData(playlist_data)
+
+        track_meta = music_metadata.CreateJSON()
+        ok = True
+
+        if playlist.metadata.CheckEmpty():
+            continue
+        
+        for top_genre in playlist.topGenres:
+            if top_genre in genre_list:
+                for attribute in playlist.topAttributes:
+                    values, _ = playlist.metadata.GetColumnValues(attribute.name)
+                    attributeDP = playlist.metadata.GetColumnDpUsingValues(values)
+
+                    dp = metaUtil.recalculateDP(values, track_meta[attribute.name])
+                    varied = float("{:.4f}".format(abs(dp - attributeDP)))
+
+                    init = attribute.interval.init
+                    final = attribute.interval.final
+
+                    if not (init <= varied <= final):
+                        ok = False
+                        break
+
+                if ok:
+                    playlist.matchedGenre = top_genre
+                    selected_playlists.append(playlist)
+                    break
+            
+    return selected_playlists, None
+
 def organizeLikedMusics(token: str, limitDate: datetime.date) -> err.Error:
     print("Collecting recently saved musics and adding to playlists... Please, wait.")
     
@@ -106,10 +146,12 @@ def organizeLikedMusics(token: str, limitDate: datetime.date) -> err.Error:
         return error
     
     for track in tracks:
+        # playlists, error = classifyMusicPlaylistsByGenreAndMetadata(track.genres, track.metadata)
         playlists, error = classifyMusicPlaylistsByMetadata(track.metadata)
         if error is not None:
             continue
         
+        # service.addMusicToPlaylists(token, track, playlists, True, True)
         service.addMusicToPlaylists(token, track, playlists, False, True)
         
 def writePlaylistJSON(token: str) -> err.Error:

@@ -72,18 +72,27 @@ def addMusicToPlaylists(token: str, track: model.Track, playlists: List[model.Pl
     for playlist in playlists:
         url = "https://api.spotify.com/v1/playlists/{}/tracks?uris={}".format(playlist.id, track.uri)
 
-        phrase = 'in genre {}'.format(playlist.matchedGenre)
-        if withMeta:
+        if withGenre and not withMeta:
+            phrase = 'in genre {}'.format(playlist.matchedGenre)
+            
+        if withMeta and not withGenre:
             attributes_phrase = ''
             for attribute in playlist.topAttributes:
                 attributes_phrase += '{} -> {} to {}\n'.format(attribute.name, attribute.interval.init, attribute.interval.final)
             
             phrase = 'with top attributes: \n{}'.format(attributes_phrase)
         
+        if withGenre and withMeta:
+            attributes_phrase = ''
+            for attribute in playlist.topAttributes:
+                attributes_phrase += '{} -> {} to {}\n'.format(attribute.name, attribute.interval.init, attribute.interval.final)
+            
+            phrase = 'in genre {} and with top attributes: \n{}'.format(playlist.matchedGenre, attributes_phrase)
+        
         print("Music {} {} matched with {} {} {}" \
                     .format(track.name, track.genres, playlist.name, \
                         playlist.topGenres, phrase), end='\n\n')
-        
+        """
         r = req.post(url=url, headers={'Authorization':'Bearer ' + token})
         data = r.json()
         r.close()
@@ -93,7 +102,7 @@ def addMusicToPlaylists(token: str, track: model.Track, playlists: List[model.Pl
                 \nPlaylistID: {} \nMusic: {}'.format(data['error'], playlist.id, track.name))
             
             print(error.Message)
-            
+        """
             
 def getArtist(token: str, artistID: str) -> Tuple[model.Artist, err.Error]:
     url = "https://api.spotify.com/v1/artists/{}".format(artistID)
