@@ -1,5 +1,5 @@
 import sys
-import datetime
+from datetime import datetime, timedelta
 import service.spotify.spotify as spotify
 import lib.spotify.spotifyUtils as lib
 import env.env
@@ -19,14 +19,13 @@ import chromedriver_autoinstaller
 # Fazer parametros de chamada do programa
 # Fazer o tratamento para o GMT
 
-today = datetime.date.today()
-
 # Criar parametro para atualizar o json das playlists
 updatePlaylistsJSON = bool(int(sys.argv[2]))
 
 # Limit date is the date under x days from today. This date is used to get musics where date is
 # equal or greater than this date
-limitDate = datetime.date(today.year, today.month, today.day - int(sys.argv[1]))
+limitDate = datetime.today() - timedelta(days=int(sys.argv[1]))
+limitDate = limitDate.date()
    
 def main():
     chromedriver_autoinstaller.install() # If chrome doesn't appear, comment this line
